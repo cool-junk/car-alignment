@@ -44,7 +44,7 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
 <section id="cal" class="scr c">
  <h1>Calibrate</h1><p id="calMsg" style="max-width:640px;font-size:20px"></p>
  <div style="width:60%;background:#222;border-radius:4px"><div id="bar"></div></div>
- <div class="row"><button id="calSkip">Skip</button><button class="p" id="calGo">Start</button></div>
+ <div class="row"><button id="calSkip">Skip step</button><button class="p" id="calGo">Start</button></div>
 </section>
 
 <section id="dash" class="scr">
@@ -88,7 +88,7 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
 const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
-let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
+let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
 const T=m=>[m[0],m[3],m[6],m[1],m[4],m[7],m[2],m[5],m[8]];
@@ -102,7 +102,7 @@ function onOri(e){if(e.beta==null||e.alpha==null)return;const R0=rotM(e.alpha*D,
  if(buf)buf.push(R0.slice(6));if(!t0)t0=performance.now()/1e3;
  const f=[R[6],R[7],R[8],R[1],R[4],R[2],R[5]];V=V?V.map((x,i)=>x+.12*(f[i]-x)):f}   /* EMA low-pass on vector components */
 const tt=()=>performance.now()/1e3-t0;
-const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>Math.asin(Math.max(-1,Math.min(1,V[2])))/D;
+const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>Math.asin(Math.max(-1,Math.min(1,V[2])))/D-Math.sign(V[0])*S.cx;
 const scr=(x,y)=>window.orientation==-90?[y,-x]:[-y,x];
 const fmt=v=>{if(S.dm){let a=Math.abs(v),d=Math.floor(a),m=Math.round((a-d)*60);if(m==60){d++;m=0}return(v<0&&(d||m)?'-':'')+d+'° '+String(m).padStart(2,'0')+"'"}return(Math.abs(v)<.005?0:v).toFixed(2)+'°'};
 const show=id=>{document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id==id))};
@@ -114,17 +114,37 @@ q('#grant').onclick=async()=>{try{const E=window.DeviceOrientationEvent;
  if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
  S.cal?(upU(),show('dash')):calStart()}catch(e){q('#err').textContent='Motion access denied. Close the tab, reopen, and tap Allow.'}};
 
-/* calibration wizard */
-const CM=['Place the phone flat, screen up, on a level surface (bench or floor). Keep it still, then tap Start.','Leave the phone still for 10 seconds to measure yaw drift.'];
-function calStart(){cs=0;q('#calMsg').textContent=CM[0];q('#bar').style.width=0;q('#calGo').disabled=false;show('cal')}
+/* calibration wizard: two flip tests (each cancels the tilt of the reference surface itself) */
+const CM=[
+ ['Put the phone in its adapter on a flat surface, screen up. Keep it still, then tap Record.','Record'],
+ ['Spin the phone and adapter 180° on the same spot, screen still up. Then tap Record.','Record'],
+ ['Keep the phone still and flat for 10 seconds to measure yaw drift.','Measure drift'],
+ ['Hold the phone in its adapter flat against a vertical wall or flat plate, landscape, screen facing out. Tap Record.','Record'],
+ ['Turn the phone and adapter 180° in the plane of the wall (upside down), same spot. Tap Record.','Record']];
+let cu=null,c1=null;
+const ap=(m,u)=>[m[0]*u[0]+m[1]*u[1]+m[2]*u[2],m[3]*u[0]+m[4]*u[1]+m[5]*u[2],m[6]*u[0]+m[7]*u[1]+m[8]*u[2]];
+const cMsg=m=>{q('#calMsg').textContent=m};
+function calStep(i){cs=i;cMsg(CM[i][0]);q('#calGo').textContent=CM[i][1];q('#bar').style.width=0;q('#calGo').disabled=false;show('cal')}
+const calStart=()=>calStep(0);
 const prog=async s=>{for(let i=0;i<=s*10;i++){q('#bar').style.width=i*10/s+'%';await sl(100)}};
-q('#calSkip').onclick=()=>{S.cal=1;save();upU();show('dash')};
+async function avg(){buf=[];await prog(4);const b=buf,n=b.length;buf=null;if(n<10)return null;
+ const a=[0,1,2].map(i=>b.reduce((s,r)=>s+r[i],0)/n),m=Math.hypot(...a);return a.map(x=>x/m)}
+function calFin(){S.cal=1;save();upU();show('dash')}
+q('#calSkip').onclick=()=>cs<4?calStep(cs+1):calFin();
 q('#recal').onclick=calStart;
 q('#calGo').onclick=async()=>{const b=q('#calGo');b.disabled=true;
- if(cs==0){buf=[];await prog(3);const n=buf.length;if(n<10){buf=null;q('#calMsg').textContent='No sensor data yet. Tap Start again.';b.disabled=false;return}
-  const a=[0,1,2].map(i=>buf.reduce((s,r)=>s+r[i],0)/n),m=Math.hypot(...a);S.M=fromTo(a.map(x=>x/m));buf=null;V=null;cs=1;
-  q('#calMsg').textContent=CM[1];q('#bar').style.width=0;q('#calGo').textContent='Measure drift'}
- else{S.dr=0;await sl(600);const h1=hY(),ta=performance.now();await prog(10);S.dr=w360(hY()-h1)/((performance.now()-ta)/1e3);S.cal=1;save();q('#calGo').textContent='Start';upU();show('dash')}
+ try{
+  if(cs==0){const u=await avg();if(!u||u[2]<.99){cMsg('The phone must be flat, screen up, and still. Tap Record to try again.');b.disabled=false;return}cu=u;calStep(1)}
+  else if(cs==1){const u=await avg();if(!cu||!u||u[2]<.99){cMsg('The phone must be flat, screen up, and still, and the first position recorded. Tap Record to try again.');b.disabled=false;return}
+   const ox=(cu[0]+u[0])/2,oy=(cu[1]+u[1])/2;S.M=fromTo([ox,oy,Math.sqrt(1-ox*ox-oy*oy)]);V=null;save();calStep(2)}
+  else if(cs==2){S.dr=0;await sl(600);const h1=hY(),ta=performance.now();await prog(10);S.dr=w360(hY()-h1)/((performance.now()-ta)/1e3);save();calStep(3)}
+  else if(cs==3){const u=await avg();if(!u){b.disabled=false;return}const c=ap(S.M,u);
+   if(Math.abs(c[2])>.2){cMsg('Hold the phone vertical against the wall, landscape. Tap Record to try again.');b.disabled=false;return}
+   c1=[Math.asin(c[2])/D,Math.sign(c[0])];calStep(4)}
+  else{const u=await avg();if(!u){b.disabled=false;return}const c=ap(S.M,u),s2=Math.sign(c[0]);
+   if(!c1||s2==c1[1]||Math.abs(c[2])>.2){cMsg('Turn the phone upside down (180°) against the same wall. Tap Record to try again.');b.disabled=false;return}
+   S.cx=(c1[0]-Math.asin(c[2])/D)/(c1[1]-s2);save();cMsg('Camber offset of '+fmt(S.cx)+' will be removed from all readings.');await sl(2500);calFin()}
+ }catch(e){}
  b.disabled=false};
 
 /* illustrations */
@@ -150,7 +170,7 @@ q('#ready').onclick=()=>{const s=F.steps[F.i];if(s.k=='toe'&&F.base==null&&V)F.b
 q('#cap').onclick=()=>{const s=F.steps[F.i];
  if(s.k=='toe')F.d[s.id]=w180(hY()-F.base);else if(s.k=='camber')F.d[s.id]=cam();
  else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};
- if(++F.i<F.steps.length)step();else{q('#rt').textContent=F.f.t;q('#rb').innerHTML=F.f.r(F.d).join('');q('#rn').textContent='';show('res')}};
+ if(++F.i<F.steps.length)step();else{F.stage=0;q('#rt').textContent=F.f.t;q('#rb').innerHTML=F.f.r(F.d).join('');q('#rn').textContent='';show('res')}};
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
 for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
@@ -158,13 +178,12 @@ const upU=()=>q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees
 q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
 
 /* live display */
-function tick(){if(F&&V&&F.stage){const s=F.steps[F.i],ux=V[0],uy=V[1];let v,lv,b,sub='',tol=1;
+function tick(){requestAnimationFrame(tick);try{if(F&&V&&F.stage&&F.steps[F.i]){const s=F.steps[F.i],ux=V[0],uy=V[1];let v,lv,b,sub='',tol=1;
   if(s.k=='toe'){v=w180(hY()-F.base);lv=Math.asin(Math.hypot(ux,uy))/D;b=scr(ux,uy);tol=.15;sub='Level error '+lv.toFixed(2)+'°'}
   else{lv=Math.abs(Math.asin(uy)/D);b=scr(0,uy);v=cam();sub='Level error '+lv.toFixed(1)+'°'}
   let ok=lv<tol;
   if(s.k=='sweep'){v=F.sg*w360(hZ()-F.h0);ok=ok&&Math.abs(v-s.tgt)<1;sub='Target '+fmt(s.tgt)+'. Camber now '+fmt(cam())}
   q('#val').textContent=fmt(v);q('#sub').textContent=sub;q('#lvl').classList.toggle('ok',lv<tol);q('#cap').disabled=!ok;
-  const c=x=>Math.max(-62,Math.min(62,x*57.3*14))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}
- requestAnimationFrame(tick)}
+  const c=x=>Math.max(-62,Math.min(62,x*57.3*14))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}}catch(e){}}
 tick();
 </script></body></html>
