@@ -1,622 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mobile Alignment System</title>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Align">
+<meta name="theme-color" content="#0a0e12">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png">
+<title>Wheel Align</title>
 <style>
-  :root {
-    --bg-dark: #0f1115;
-    --panel-bg: #1a1d24;
-    --text-main: #ffffff;
-    --text-muted: #8b92a5;
-    --accent-green: #00ff88;
-    --accent-blue: #00ccff;
-    --accent-red: #ff3366;
-    --border-color: #2a2e39;
-  }
+:root{--bg:#0a0e12;--fg:#fff;--mut:#9aa7b5;--card:#18212b;--ok:#19e36b;--bad:#ff5252;--acc:#4aa8ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:600 18px -apple-system,system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.scr{display:none;height:100%;padding:12px 22px;flex-direction:column;gap:12px}.scr.on{display:flex}
+h1{margin:0;font-size:30px}p{margin:0;color:var(--mut);line-height:1.35}
+.row{display:flex;gap:16px;align-items:center}.sp{flex:1}.c{justify-content:center;align-items:center;text-align:center}
+button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:14px 22px;background:var(--card);color:var(--fg);font-size:20px}
+button.p{background:var(--acc);color:#001}button:disabled{opacity:.28}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1}
+.tiles button{text-align:left;font-size:24px;padding:16px;line-height:1.15}.tiles small{display:block;color:var(--mut);font-weight:500;font-size:15px;margin-top:6px}
+#bar{height:8px;width:0;background:var(--ok);border-radius:4px}
+.main{display:flex;gap:22px;flex:1;min-height:0}.main>div{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;align-items:center;text-align:center}
+svg{width:100%;max-height:48vh}
+.big{font-size:88px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.lvl{position:relative;width:150px;height:150px;border:5px solid var(--mut);border-radius:50%;flex:none}
+.lvl:before,.lvl:after{content:"";position:absolute;background:#333}.lvl:before{left:50%;top:0;bottom:0;width:2px}.lvl:after{top:50%;left:0;right:0;height:2px}
+.lvl i{position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px;background:var(--bad);z-index:1;transform:translate(var(--x,0),var(--y,0)) rotate(45deg)}
+.lvl.ok{border-color:var(--ok)}.lvl.ok i{background:var(--ok)}
+.pl .live{display:none}.live{display:contents}.rd{display:none}.pl .rd{display:block}
+table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;border-bottom:1px solid #26313d}td+td{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}td small{color:var(--mut);font-weight:500;font-size:15px}
+#rot{position:fixed;inset:0;background:var(--bg);z-index:9;display:none;align-items:center;justify-content:center;text-align:center;font-size:28px}
+@media (orientation:portrait){#rot{display:flex}}
+</style></head><body>
+<div id="rot"><div>Rotate the phone to landscape<br><p>Turn off Portrait Orientation Lock in Control Center</p></div></div>
 
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+<section id="welcome" class="scr on c">
+ <h1 style="font-size:46px">Wheel Align</h1>
+ <p>Measure toe, camber, caster and thrust with your phone's motion sensors.</p>
+ <button class="p" id="grant">Grant Sensor Access</button><p id="err" style="color:var(--bad)"></p>
+</section>
 
-  body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-  }
+<section id="cal" class="scr c">
+ <h1>Calibrate</h1><p id="calMsg" style="max-width:640px;font-size:20px"></p>
+ <div style="width:60%;background:#222;border-radius:4px"><div id="bar"></div></div>
+ <div class="row"><button id="calSkip">Skip</button><button class="p" id="calGo">Start</button></div>
+</section>
 
-  /* Header & Toolbar */
-  header {
-    background-color: var(--panel-bg);
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .brand { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; color: var(--text-main); }
-  .status-badges { display: flex; gap: 10px; font-size: 0.8rem; }
-  .badge { padding: 4px 8px; border-radius: 4px; background: #333; color: #aaa; }
-  .badge.active { background: rgba(0, 255, 136, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+<section id="dash" class="scr">
+ <div class="row"><h1>Wheel Align</h1><span class="sp"></span><button id="recal">Recalibrate</button></div>
+ <div class="tiles">
+  <button id="t-toe">Quick Align<small>Total toe, left then right</small></button>
+  <button id="t-camber">Camber<small>Both wheels, vs gravity</small></button>
+  <button id="t-four">4-Wheel / Thrust<small>Rear axle first, then front toe</small></button>
+  <button id="t-casL">Caster: left<small>15° out / 15° in sweep</small></button>
+  <button id="t-casR">Caster: right<small>15° out / 15° in sweep</small></button>
+  <button id="t-units">Units<small id="uLbl"></small></button>
+ </div>
+</section>
 
-  .toolbar {
-    display: flex;
-    overflow-x: auto;
-    background: var(--bg-dark);
-    padding: 10px;
-    gap: 10px;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .toolbar button {
-    flex: 0 0 auto;
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .toolbar button.active {
-    background: rgba(0, 204, 255, 0.1);
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-  }
-
-  /* Main Viewport */
-  .viewport {
-    flex: 1;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-  }
-
-  /* Top-Down Car UI */
-  .car-chassis {
-    position: relative;
-    width: 140px;
-    height: 300px;
-    border: 2px dashed var(--border-color);
-    border-radius: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .car-chassis::after {
-    content: 'FRONT';
-    position: absolute;
-    top: 10px;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-weight: bold;
-    letter-spacing: 2px;
-  }
-
-  .wheel {
-    position: absolute;
-    width: 30px;
-    height: 60px;
-    background: var(--panel-bg);
-    border: 2px solid var(--text-muted);
-    border-radius: 6px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.7rem;
-    font-weight: bold;
-    transition: all 0.2s;
-  }
-  .wheel.fl { top: 20px; left: -40px; }
-  .wheel.fr { top: 20px; right: -40px; }
-  .wheel.rl { bottom: 20px; left: -40px; }
-  .wheel.rr { bottom: 20px; right: -40px; }
-
-  .wheel.flashing {
-    border-color: var(--accent-green);
-    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
-    animation: flash 1s infinite alternate;
-  }
-  .wheel.measured {
-    background: rgba(0, 255, 136, 0.2);
-    border-color: var(--accent-green);
-    color: var(--accent-green);
-  }
-  @keyframes flash { from { opacity: 0.5; } to { opacity: 1; } }
-
-  /* HUD Overlays (Green Diamond & Blue Bar) */
-  .hud-container {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: rgba(15, 17, 21, 0.85);
-    z-index: 10;
-  }
-
-  .hud-crosshair {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-  }
-  .hud-crosshair::before, .hud-crosshair::after {
-    content: ''; position: absolute; background: rgba(255,255,255,0.2);
-  }
-  .hud-crosshair::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
-  .hud-crosshair::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
-  
-  .hud-target-circle {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 40px; height: 40px;
-    border: 2px solid rgba(255,255,255,0.4);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .green-diamond {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 20px; height: 20px;
-    background: var(--accent-red);
-    transform: translate(-50%, -50%) rotate(45deg);
-    transition: top 0.1s, left 0.1s, background 0.2s;
-  }
-
-  .blue-bar-container {
-    margin-top: 40px;
-    width: 250px;
-    height: 10px;
-    background: #fff;
-    position: relative;
-    border-radius: 5px;
-  }
-  .blue-bar {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: var(--accent-blue);
-    border-radius: 5px;
-    transform-origin: center;
-    transition: transform 0.1s;
-    opacity: 0.8;
-  }
-
-  .hud-readout {
-    margin-top: 30px;
-    font-size: 2rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Bottom Panel & Prompts */
-  .bottom-panel {
-    background: var(--panel-bg);
-    padding: 20px;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    min-height: 180px;
-  }
-
-  .instruction-text {
-    font-size: 1.1rem;
-    text-align: center;
-    font-weight: 500;
-    line-height: 1.4;
-  }
-
-  .action-btn {
-    background: var(--accent-green);
-    color: #000;
-    border: none;
-    padding: 18px;
-    border-radius: 12px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
-  }
-  .action-btn:active { transform: scale(0.98); }
-  .action-btn:disabled {
-    background: #333; color: #777; box-shadow: none; cursor: not-allowed;
-  }
-
-  /* Specs Overlay */
-  .specs-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: var(--bg-dark);
-    z-index: 20;
-    padding: 20px;
-    display: none;
-    flex-direction: column;
-  }
-  .specs-overlay h2 { margin-bottom: 20px; }
-  .specs-overlay select {
-    width: 100%; padding: 15px; background: var(--panel-bg); border: 1px solid var(--border-color);
-    color: white; font-size: 1rem; border-radius: 8px; margin-bottom: 20px;
-  }
-  .close-specs { background: #333; color: white; padding: 15px; border: none; border-radius: 8px; margin-top: auto; font-size: 1.1rem; font-weight: bold;}
-
-  /* Data Table */
-  .results-table {
-    width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;
-  }
-  .results-table th, .results-table td {
-    padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color);
-  }
-  .results-table th { color: var(--text-muted); font-weight: normal; }
-
-  #permission-screen {
-    position: absolute; top:0; left:0; width:100%; height:100%;
-    background: var(--bg-dark); z-index: 100;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    padding: 30px; text-align: center; gap: 20px;
-  }
-
-</style>
-</head>
-<body>
-
-  <div id="permission-screen">
-    <h2>Mobile Alignment System</h2>
-    <p style="color: #aaa">To emulate the Gyraline workflow, this app requires access to your device's gyroscope and accelerometer.</p>
-    <button class="action-btn" id="btn-grant-sensors" style="width: 100%;">Grant Sensor Access</button>
+<section id="meas" class="scr">
+ <div class="row"><button id="back">Exit</button><div class="sp"><span id="mt" style="font-size:26px"></span><p id="mp"></p></div></div>
+ <div class="main">
+  <div><div id="ill" style="width:100%"></div><p id="inst" style="font-size:20px"></p></div>
+  <div>
+   <div class="rd"><button class="p" id="ready" style="font-size:28px;padding:22px 36px">Ready</button></div>
+   <div class="live"><div class="big" id="val"></div><div class="lvl" id="lvl"><i id="bub"></i></div><p id="sub"></p>
+   <button class="p" id="cap" style="font-size:28px;padding:18px 48px">Save</button></div>
   </div>
+ </div>
+</section>
 
-  <header>
-    <div class="brand">ALIGNMENT PRO</div>
-    <div class="status-badges">
-      <div id="badge-cal" class="badge">Uncalibrated</div>
-      <div id="badge-sensor" class="badge">Sensors Off</div>
-    </div>
-  </header>
-
-  <div class="toolbar" id="toolbar">
-    <button data-mode="CALIBRATE">Calibrate Offset</button>
-    <button data-mode="QUICK">Quick Align</button>
-    <button data-mode="CAMBER">Camber</button>
-    <button data-mode="CASTER">Caster</button>
-    <button data-mode="SPECS">Specs Database</button>
-  </div>
-
-  <div class="viewport">
-    <div class="car-chassis">
-      <div class="wheel fl" data-wheel="FL">FL</div>
-      <div class="wheel fr" data-wheel="FR">FR</div>
-      <div class="wheel rl" data-wheel="RL">RL</div>
-      <div class="wheel rr" data-wheel="RR">RR</div>
-    </div>
-
-    <div class="hud-container" id="hud">
-      <div class="hud-crosshair">
-        <div class="hud-target-circle"></div>
-        <div class="green-diamond" id="diamond"></div>
-      </div>
-      <div class="blue-bar-container">
-        <div class="blue-bar" id="blue-bar"></div>
-      </div>
-      <div class="hud-readout" id="hud-val">0.00°</div>
-    </div>
-
-    <div class="specs-overlay" id="specs-screen">
-      <h2>Vehicle Target Specs</h2>
-      <select id="vehicle-select">
-        <option value="">-- Select Vehicle --</option>
-        <optgroup label="Tesla">
-          <option value="tesla_s_17">2017 Tesla Model S (Air Susp)</option>
-          <option value="tesla_y_20">2020 Tesla Model Y</option>
-        </optgroup>
-        <optgroup label="Ford">
-          <option value="ford_f150_05">2005 Ford F-150 FX4 4x4</option>
-        </optgroup>
-        <optgroup label="Chevrolet">
-          <option value="corvette_c8">Corvette C8 Stingray</option>
-        </optgroup>
-      </select>
-      
-      <table class="results-table" id="specs-table">
-        <tr><th>Spec</th><th>Target</th><th>Tolerance</th></tr>
-        <tr><td>Fr Camber</td><td id="spec-fc">-</td><td id="tol-fc">-</td></tr>
-        <tr><td>Fr Toe</td><td id="spec-ft">-</td><td id="tol-ft">-</td></tr>
-        <tr><td>Rr Camber</td><td id="spec-rc">-</td><td id="tol-rc">-</td></tr>
-        <tr><td>Rr Toe</td><td id="spec-rt">-</td><td id="tol-rt">-</td></tr>
-      </table>
-      
-      <button class="close-specs" onclick="document.getElementById('specs-screen').style.display='none'">Close Specs</button>
-    </div>
-  </div>
-
-  <div class="bottom-panel">
-    <div class="instruction-text" id="instruction">Select a mode from the toolbar to begin.</div>
-    <button class="action-btn" id="btn-action" disabled>Waiting...</button>
-  </div>
+<section id="res" class="scr">
+ <h1 id="rt"></h1><table id="rb"></table><p id="rn"></p><span class="sp"></span>
+ <div class="row"><button id="redo">Measure again</button><button class="p" id="done">Done</button></div>
+</section>
 
 <script>
-let audioCtx;
-function playBeep(success = true) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(success ? 800 : 300, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.15);
-}
+/* MATH (all angles in degrees; D=pi/180)
+ R = Rz(alpha)·Rx(beta)·Ry(gamma)  (W3C device->earth; earth X=E, Y=N, Z=up)
+ Calibration: u_cal = 3rd row of R while flat; Rcal rotates u_cal to (0,0,1); R' = R·Rcalᵀ (removes case/adapter tilt)
+ up vector in device frame:  u = (R'20, R'21, R'22) = (-cos b sin g, sin b, cos b cos g)
+ TOE    heading of device long axis (y): h = atan2(R'01, R'11) = -alpha when flat; wheel line = h mod 180
+        total toe = wrap180(hL - hR)  (+ = toe-in); individual toe vs thrust line T=(hRL+hRR)/2: L = hL-T, R = -(hR-T)
+ CAMBER screen normal z points out of the car: camber = asin(R'22) = asin(cos b·cos g)  (+ = top out, either side)
+ STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
+ CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
+ Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
+const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
+const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
+const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
+const T=m=>[m[0],m[3],m[6],m[1],m[4],m[7],m[2],m[5],m[8]];
+const rotM=(a,b,g)=>{const cA=Math.cos(a),sA=Math.sin(a),cB=Math.cos(b),sB=Math.sin(b),cG=Math.cos(g),sG=Math.sin(g);
+ return[cA*cG-sA*sB*sG,-cB*sA,cG*sA*sB+cA*sG,cG*sA+cA*sB*sG,cA*cB,sA*sG-cA*cG*sB,-cB*sG,sB,cB*cG]};
+const fromTo=u=>{const kx0=u[1],ky0=-u[0],s=Math.hypot(kx0,ky0),c=u[2];if(s<1e-9)return[1,0,0,0,1,0,0,0,1];
+ const x=kx0/s,y=ky0/s,t=1-c;return[c+x*x*t,x*y*t,y*s,x*y*t,c+y*y*t,-x*s,-y*s,x*s,c]};
+const w180=a=>((a+90)%180+180)%180-90,w360=a=>((a+540)%360+360)%360-180;
+let V=null,t0=0,buf=null,F=null,cs=0;
+function onOri(e){if(e.beta==null||e.alpha==null)return;const R0=rotM(e.alpha*D,e.beta*D,e.gamma*D),R=mm(R0,T(S.M));
+ if(buf)buf.push(R0.slice(6));if(!t0)t0=performance.now()/1e3;
+ const f=[R[6],R[7],R[8],R[1],R[4],R[2],R[5]];V=V?V.map((x,i)=>x+.12*(f[i]-x)):f}   /* EMA low-pass on vector components */
+const tt=()=>performance.now()/1e3-t0;
+const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>Math.asin(Math.max(-1,Math.min(1,V[2])))/D;
+const scr=(x,y)=>window.orientation==-90?[y,-x]:[-y,x];
+const fmt=v=>{if(S.dm){let a=Math.abs(v),d=Math.floor(a),m=Math.round((a-d)*60);if(m==60){d++;m=0}return(v<0&&(d||m)?'-':'')+d+'° '+String(m).padStart(2,'0')+"'"}return(Math.abs(v)<.005?0:v).toFixed(2)+'°'};
+const show=id=>{document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id==id))};
 
-let orientation = { pitch: 0, roll: 0, yaw: 0 };
-let rawOrientation = { pitch: 0, roll: 0, yaw: 0 };
-const filterFactor = 0.85;
+/* permissions + start */
+q('#grant').onclick=async()=>{try{const E=window.DeviceOrientationEvent;
+ if(E&&typeof E.requestPermission=='function'&&await E.requestPermission()!=='granted')throw 0;
+ addEventListener('deviceorientation',onOri);try{navigator.wakeLock&&navigator.wakeLock.request('screen')}catch(e){}
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+ S.cal?(upU(),show('dash')):calStart()}catch(e){q('#err').textContent='Motion access denied. Close the tab, reopen, and tap Allow.'}};
 
-document.getElementById('btn-grant-sensors').addEventListener('click', async () => {
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  audioCtx = new AudioContext();
-  audioCtx.resume();
-  
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const permissionState = await DeviceOrientationEvent.requestPermission();
-      if (permissionState === 'granted') {
-        startSensors();
-      } else {
-        alert("Sensor permission denied. Must be allowed in Safari settings.");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Requires HTTPS to request sensor access.");
-    }
-  } else {
-    startSensors();
-  }
-});
+/* calibration wizard */
+const CM=['Place the phone flat, screen up, on a level surface (bench or floor). Keep it still, then tap Start.','Leave the phone still for 10 seconds to measure yaw drift.'];
+function calStart(){cs=0;q('#calMsg').textContent=CM[0];q('#bar').style.width=0;q('#calGo').disabled=false;show('cal')}
+const prog=async s=>{for(let i=0;i<=s*10;i++){q('#bar').style.width=i*10/s+'%';await sl(100)}};
+q('#calSkip').onclick=()=>{S.cal=1;save();upU();show('dash')};
+q('#recal').onclick=calStart;
+q('#calGo').onclick=async()=>{const b=q('#calGo');b.disabled=true;
+ if(cs==0){buf=[];await prog(3);const n=buf.length;if(n<10){buf=null;q('#calMsg').textContent='No sensor data yet. Tap Start again.';b.disabled=false;return}
+  const a=[0,1,2].map(i=>buf.reduce((s,r)=>s+r[i],0)/n),m=Math.hypot(...a);S.M=fromTo(a.map(x=>x/m));buf=null;V=null;cs=1;
+  q('#calMsg').textContent=CM[1];q('#bar').style.width=0;q('#calGo').textContent='Measure drift'}
+ else{S.dr=0;await sl(600);const h1=hY(),ta=performance.now();await prog(10);S.dr=w360(hY()-h1)/((performance.now()-ta)/1e3);S.cal=1;save();q('#calGo').textContent='Start';upU();show('dash')}
+ b.disabled=false};
 
-function startSensors() {
-  document.getElementById('permission-screen').style.display = 'none';
-  document.getElementById('badge-sensor').textContent = "Sensors Active";
-  document.getElementById('badge-sensor').classList.add('active');
-  
-  window.addEventListener('deviceorientation', (e) => {
-    let rPitch = e.beta || 0;
-    let rRoll = e.gamma || 0;
-    let rYaw = e.alpha || 0;
-    if (rPitch > 80) rRoll = 0; 
-    rawOrientation = { pitch: rPitch, roll: rRoll, yaw: rYaw };
-    orientation.pitch = (orientation.pitch * filterFactor) + (rPitch * (1 - filterFactor));
-    orientation.roll = (orientation.roll * filterFactor) + (rRoll * (1 - filterFactor));
-    orientation.yaw = (orientation.yaw * filterFactor) + (rYaw * (1 - filterFactor));
-    updateHUD();
-  });
-}
+/* illustrations */
+const ILL={toe:'<svg viewBox="0 0 220 130"><rect x="20" y="12" width="180" height="32" rx="6" fill="#555"/><text x="110" y="33" fill="#ddd" font-size="13" text-anchor="middle">wheel / rim, top view</text><rect x="45" y="50" width="130" height="58" rx="8" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><text x="110" y="85" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">SCREEN UP</text></svg>',
+cam:'<svg viewBox="0 0 220 130"><rect x="30" y="8" width="36" height="114" rx="8" fill="#555"/><text x="48" y="68" fill="#ddd" font-size="12" text-anchor="middle" transform="rotate(-90 48 65)">wheel, front view</text><rect x="70" y="20" width="14" height="90" rx="3" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><path d="M96 65h76" stroke="#19e36b" stroke-width="5"/><path d="M180 65l-14-9v18z" fill="#19e36b"/><text x="138" y="52" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">SCREEN OUT</text></svg>'};
+const WN={L:'Left',R:'Right',FL:'Front left',FR:'Front right',RL:'Rear left',RR:'Rear right'};
+const INST={toe:'Rest the phone on the adapter with its long bottom edge against the rim. Screen faces up.',camber:'Hold the back of the phone flat on the wheel face, landscape, screen facing away from the car.'};
 
-let currentMode = 'IDLE';
-let workflowStep = 0;
-let camberOffset = 0;
-let isCalibrated = false;
+/* flows */
+const row=(a,b,c)=>`<tr><td>${a}${c?'<br><small>'+c+'</small>':''}</td><td>${b}</td></tr>`;
+const FL={
+ toe:{t:'Quick Align: total toe',s:()=>['L','R'].map(w=>({k:'toe',w,id:w})),r:d=>[row('Total toe',fmt(w180(d.L-d.R)),'+ is toe-in, − is toe-out')]},
+ camber:{t:'Camber',s:()=>['L','R'].map(w=>({k:'camber',w,id:w})),r:d=>[row('Left camber',fmt(d.L)),row('Right camber',fmt(d.R)),row('Cross camber (L − R)',fmt(d.L-d.R)),'<tr><td colspan=2><small>+ is top of wheel tilted out</small></td></tr>']},
+ four:{t:'4-Wheel / Thrust',s:()=>['RL','RR','FL','FR'].map(w=>({k:'toe',w,id:w})),r:d=>{const Tt=(d.RL+d.RR)/2;return[row('Rear left toe',fmt(d.RL-Tt)),row('Rear right toe',fmt(-(d.RR-Tt))),row('Front left toe',fmt(d.FL-Tt)),row('Front right toe',fmt(-(d.FR-Tt))),row('Thrust angle',fmt(Tt-(d.FL+d.FR)/2),'rear thrust line vs front axle direction, + is right')]}},
+ cas:{t:'Caster',s:w=>[{k:'zero',w,id:'z'},{k:'sweep',w,id:'o',tgt:15,np:1},{k:'sweep',w,id:'i',tgt:-15,np:1}],r:d=>{const o=d.o,i=d.i;return[row('Caster',fmt((o.c-i.c)/(Math.sin(o.a*D)+Math.sin(-i.a*D))),'+ is top of steering axis tilted rearward'),row('Camber, turned out',fmt(o.c),'at '+fmt(o.a)),row('Camber, turned in',fmt(i.c),'at '+fmt(i.a))]}}};
+function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},base:null};show('meas');step()}
+function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#mt').textContent=(WN[s.w]||'')+' wheel: '+({toe:'toe',camber:'camber',zero:'straight ahead',sweep:s.tgt>0?'turn '+s.tgt+'° OUT':'turn '+(-s.tgt)+'° IN, past centre'})[s.k];
+ q('#mp').textContent=F.f.t+'. Step '+(F.i+1)+' of '+F.steps.length;
+ q('#ill').innerHTML=s.k=='toe'?ILL.toe:ILL.cam;q('#inst').textContent=s.k=='toe'||s.k=='camber'||!s.np&&s.k=='zero'?INST[s.k=='toe'?'toe':'camber']:s.k=='zero'?'':'Turn the steering wheel until the angle reaches the target. Keep the phone flat on the wheel.';
+ if(s.k=='zero'&&!s.np)q('#inst').textContent=INST.camber+' Point the wheels straight ahead.';
+ q('#meas').classList.toggle('pl',!F.stage)}
+q('#ready').onclick=()=>{const s=F.steps[F.i];if(s.k=='toe'&&F.base==null&&V)F.base=hY();F.stage=1;q('#meas').classList.remove('pl')};
+q('#cap').onclick=()=>{const s=F.steps[F.i];
+ if(s.k=='toe')F.d[s.id]=w180(hY()-F.base);else if(s.k=='camber')F.d[s.id]=cam();
+ else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};
+ if(++F.i<F.steps.length)step();else{q('#rt').textContent=F.f.t;q('#rb').innerHTML=F.f.r(F.d).join('');q('#rn').textContent='';show('res')}};
+q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
+q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
+for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
+const upU=()=>q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';
+q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
 
-let calibTemp = 0;
-let measurements = {
-  FL: { camber: null, toe: null, caster: null },
-  FR: { camber: null, toe: null, caster: null },
-  RL: { camber: null, toe: null, caster: null },
-  RR: { camber: null, toe: null, caster: null }
-};
-
-const ui = {
-  inst: document.getElementById('instruction'),
-  btn: document.getElementById('btn-action'),
-  hud: document.getElementById('hud'),
-  diamond: document.getElementById('diamond'),
-  blueBar: document.getElementById('blue-bar'),
-  hudVal: document.getElementById('hud-val'),
-  wheels: document.querySelectorAll('.wheel')
-};
-
-document.querySelectorAll('.toolbar button').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    const mode = e.target.getAttribute('data-mode');
-    
-    if (mode === 'SPECS') {
-      document.getElementById('specs-screen').style.display = 'flex';
-      return;
-    }
-    
-    startMode(mode);
-  });
-});
-
-function resetWheels() {
-  ui.wheels.forEach(w => {
-    w.classList.remove('flashing', 'measured');
-  });
-}
-
-function highlightWheel(code, flashing = true) {
-  resetWheels();
-  const w = document.querySelector(`.wheel.${code.toLowerCase()}`);
-  if (w) {
-    if (flashing) w.classList.add('flashing');
-    else w.classList.add('measured');
-  }
-}
-
-function startMode(mode) {
-  currentMode = mode;
-  workflowStep = 0;
-  ui.hud.style.display = 'flex';
-  ui.btn.disabled = false;
-  
-  if (!isCalibrated && mode !== 'CALIBRATE') {
-    ui.inst.innerHTML = "⚠️ System Uncalibrated. Please run <b>Calibrate Offset</b> first.";
-    ui.btn.disabled = true;
-    ui.btn.textContent = "Requires Calibration";
-    ui.hud.style.display = 'none';
-    return;
-  }
-
-  if (mode === 'CALIBRATE') {
-    resetWheels();
-    ui.inst.innerHTML = "<b>Camber Offset Calibration:</b><br>Place device against flat reference surface. Level the Blue Bar.";
-    ui.btn.textContent = "Save Calibration 1";
-    ui.btn.onclick = () => processCalibration(1);
-  } 
-  else if (mode === 'QUICK') {
-    ui.inst.innerHTML = "<b>Quick Align (6-Point):</b><br>Start at the <b>Rear Left</b> wheel. Place device on outer rim and center the diamond.";
-    ui.btn.textContent = "Capture RL";
-    highlightWheel('RL');
-    ui.btn.onclick = () => processQuickAlign('RL');
-  }
-  else if (mode === 'CAMBER') {
-    resetWheels();
-    ui.inst.innerHTML = "<b>Camber Mode:</b><br>Place device against any wheel rim. Level the Blue Bar.";
-    ui.btn.textContent = "Capture Camber";
-    ui.btn.onclick = () => {
-      playBeep();
-      const val = (orientation.roll - camberOffset).toFixed(2);
-      ui.inst.innerHTML = `Captured: <b>${val}°</b> Camber.<br>Move to another wheel.`;
-    };
-  }
-  else if (mode === 'CASTER') {
-    resetWheels();
-    highlightWheel('FL');
-    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Place on Front Left wheel. Ensure steering is perfectly straight.";
-    ui.btn.textContent = "Capture Straight";
-    ui.btn.onclick = () => processCasterStep(1);
-  }
-}
-
-function processCalibration(step) {
-  playBeep();
-  if (step === 1) {
-    calibTemp = orientation.roll;
-    ui.inst.innerHTML = "<b>Calibration Step 2:</b><br>Rotate device 180 degrees (upside down) on the exact same surface.";
-    ui.btn.textContent = "Save Calibration 2";
-    ui.btn.onclick = () => processCalibration(2);
-  } else {
-    const calib2 = orientation.roll;
-    camberOffset = (calibTemp + calib2) / 2; 
-    isCalibrated = true;
-    
-    document.getElementById('badge-cal').textContent = "Calibrated";
-    document.getElementById('badge-cal').classList.add('active');
-    
-    ui.inst.innerHTML = `<b>Calibration Complete.</b><br>Offset: ${camberOffset.toFixed(2)}°. Ready to measure.`;
-    ui.btn.textContent = "Done";
-    ui.btn.disabled = true;
-    ui.hud.style.display = 'none';
-  }
-}
-
-function processQuickAlign(wheel) {
-  playBeep();
-  const val = (orientation.roll - camberOffset).toFixed(2);
-  measurements[wheel].camber = val;
-  document.querySelector(`.wheel.${wheel.toLowerCase()}`).classList.add('measured');
-  
-  const sequence = {'RL': 'RR', 'RR': 'FL', 'FL': 'FR', 'FR': null};
-  const next = sequence[wheel];
-  
-  if (next) {
-    highlightWheel(next);
-    ui.inst.innerHTML = `<b>Quick Align:</b><br>Move to the <b>${next}</b> wheel. Center diamond.`;
-    ui.btn.textContent = `Capture ${next}`;
-    ui.btn.onclick = () => processQuickAlign(next);
-  } else {
-    resetWheels();
-    ui.hud.style.display = 'none';
-    ui.inst.innerHTML = `<b>Quick Align Complete.</b><br>All wheels measured. Review data below.`;
-    ui.btn.textContent = "View Report";
-    ui.btn.disabled = true;
-  }
-}
-
-let casterData = { straightCamber: 0, outCamber: 0, inCamber: 0 };
-function processCasterStep(step) {
-  playBeep();
-  if (step === 1) {
-    casterData.straightCamber = orientation.roll - camberOffset;
-    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Turn steering wheel <b>20° OUT</b> (away from car).";
-    ui.btn.textContent = "Capture Steer Out";
-    ui.btn.onclick = () => processCasterStep(2);
-  } else if (step === 2) {
-    casterData.outCamber = orientation.roll - camberOffset;
-    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Turn steering wheel <b>20° IN</b> (towards car).";
-    ui.btn.textContent = "Capture Steer In";
-    ui.btn.onclick = () => processCasterStep(3);
-  } else {
-    casterData.inCamber = orientation.roll - camberOffset;
-    const caster = ((casterData.outCamber - casterData.inCamber) * 1.5).toFixed(2);
-    ui.hud.style.display = 'none';
-    ui.inst.innerHTML = `<b>Sweep Complete.</b><br>Calculated Caster: <b>${caster}°</b>`;
-    ui.btn.textContent = "Done";
-    ui.btn.disabled = true;
-  }
-}
-
-function updateHUD() {
-  if (ui.hud.style.display === 'none') return;
-
-  const displayRoll = orientation.roll - (isCalibrated ? camberOffset : 0);
-  ui.blueBar.style.transform = `rotate(${displayRoll}deg)`;
-  ui.hudVal.textContent = displayRoll.toFixed(2) + "°";
-
-  let pDelta = orientation.pitch - 90; 
-  let rDelta = orientation.roll;
-
-  let x = Math.max(-90, Math.min(90, rDelta * 4)); 
-  let y = Math.max(-90, Math.min(90, pDelta * 4));
-
-  ui.diamond.style.left = `calc(50% + ${x}px)`;
-  ui.diamond.style.top = `calc(50% + ${y}px)`;
-
-  if (Math.abs(x) < 20 && Math.abs(y) < 20) {
-    ui.diamond.style.background = 'var(--accent-green)';
-  } else {
-    ui.diamond.style.background = 'var(--accent-red)';
-  }
-}
-
-const vehicleDB = {
-  "tesla_s_17": { fc: "-0.7", ft: "0.05", rc: "-1.5", rt: "0.15" },
-  "tesla_y_20": { fc: "-0.5", ft: "0.00", rc: "-1.2", rt: "0.10" },
-  "ford_f150_05": { fc: "-0.2", ft: "0.10", rc: "0.0", rt: "0.00" },
-  "corvette_c8": { fc: "-1.0", ft: "0.00", rc: "-1.5", rt: "0.10" }
-};
-
-document.getElementById('vehicle-select').addEventListener('change', (e) => {
-  const specs = vehicleDB[e.target.value];
-  if (specs) {
-    document.getElementById('spec-fc').textContent = specs.fc + "°";
-    document.getElementById('spec-ft').textContent = specs.ft + "°";
-    document.getElementById('spec-rc').textContent = specs.rc + "°";
-    document.getElementById('spec-rt').textContent = specs.rt + "°";
-    
-    document.getElementById('tol-fc').textContent = "± 0.5°";
-    document.getElementById('tol-ft').textContent = "± 0.1°";
-    document.getElementById('tol-rc').textContent = "± 0.5°";
-    document.getElementById('tol-rt').textContent = "± 0.1°";
-  } else {
-    ['fc','ft','rc','rt'].forEach(k => {
-      document.getElementById(`spec-${k}`).textContent = "-";
-      document.getElementById(`tol-${k}`).textContent = "-";
-    });
-  }
-});
-</script>
-</body>
-</html>
+/* live display */
+function tick(){if(F&&V&&F.stage){const s=F.steps[F.i],ux=V[0],uy=V[1];let v,lv,b,sub='',tol=1;
+  if(s.k=='toe'){v=w180(hY()-F.base);lv=Math.asin(Math.hypot(ux,uy))/D;b=scr(ux,uy);tol=.15;sub='Level error '+lv.toFixed(2)+'°'}
+  else{lv=Math.abs(Math.asin(uy)/D);b=scr(0,uy);v=cam();sub='Level error '+lv.toFixed(1)+'°'}
+  let ok=lv<tol;
+  if(s.k=='sweep'){v=F.sg*w360(hZ()-F.h0);ok=ok&&Math.abs(v-s.tgt)<1;sub='Target '+fmt(s.tgt)+'. Camber now '+fmt(cam())}
+  q('#val').textContent=fmt(v);q('#sub').textContent=sub;q('#lvl').classList.toggle('ok',lv<tol);q('#cap').disabled=!ok;
+  const c=x=>Math.max(-62,Math.min(62,x*57.3*14))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}
+ requestAnimationFrame(tick)}
+tick();
+</script></body></html>
