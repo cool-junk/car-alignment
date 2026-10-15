@@ -18,13 +18,13 @@ h1{margin:0;font-size:30px}p{margin:0;color:var(--mut);line-height:1.35}
 .row{display:flex;gap:16px;align-items:center}.sp{flex:1}.c{justify-content:center;align-items:center;text-align:center}
 button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:14px 22px;background:var(--card);color:var(--fg);font-size:20px}
 button.p{background:var(--acc);color:#001}button:disabled{opacity:.28}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1}
-.tiles button{text-align:left;font-size:24px;padding:16px;line-height:1.15}.tiles small{display:block;color:var(--mut);font-weight:500;font-size:15px;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1}
+.tiles button{text-align:left;font-size:20px;padding:14px;line-height:1.15}.tiles small{display:block;color:var(--mut);font-weight:500;font-size:15px;margin-top:6px}
 #bar{height:8px;width:0;background:var(--ok);border-radius:4px}
 .main{display:flex;gap:22px;flex:1;min-height:0}.main>div{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;align-items:center;text-align:center}
-svg{width:100%;max-height:48vh}
-.big{font-size:88px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.lvl{position:relative;width:150px;height:150px;border:5px solid var(--mut);border-radius:50%;flex:none}
+svg{width:100%;max-height:26vh}
+.big{font-size:72px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.lvl{position:relative;width:128px;height:128px;border:5px solid var(--mut);border-radius:50%;flex:none}
 .lvl:before,.lvl:after{content:"";position:absolute;background:#333}.lvl:before{left:50%;top:0;bottom:0;width:2px}.lvl:after{top:50%;left:0;right:0;height:2px}
 .lvl i{position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px;background:var(--bad);z-index:1;transform:translate(var(--x,0),var(--y,0)) rotate(45deg)}
 .lvl.ok{border-color:var(--ok)}.lvl.ok i{background:var(--ok)}
@@ -32,6 +32,8 @@ svg{width:100%;max-height:48vh}
 table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;border-bottom:1px solid #26313d}td+td{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}td small{color:var(--mut);font-weight:500;font-size:15px}
 #rot{position:fixed;inset:0;background:var(--bg);z-index:9;display:none;align-items:center;justify-content:center;text-align:center;font-size:28px}
 @media (orientation:portrait){#rot{display:flex}}
+select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10px;border:1px solid #33414f;background:var(--card);color:var(--fg);width:100%;-webkit-user-select:text;user-select:text}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sc{overflow-y:auto;-webkit-overflow-scrolling:touch}.ok2{color:var(--ok)}.no2{color:var(--bad)}#rep{display:none}
+@media print{html,body{overflow:visible!important;height:auto!important;background:#fff!important}body>*:not(#rep){display:none!important}#rep{display:block!important;color:#000;font:14px -apple-system,system-ui,sans-serif}#rep td{border-bottom:1px solid #bbb;padding:5px 4px;color:#000;font-size:13px}#rep th{text-align:right;border-bottom:2px solid #000;padding:4px;font-size:13px}#rep th:first-child{text-align:left}#rep .ok2{color:#0a7a2f}#rep .no2{color:#c00}@page{margin:12mm}}
 </style></head><body>
 <div id="rot"><div>Rotate the phone to landscape<br><p>Turn off Portrait Orientation Lock in Control Center</p></div></div>
 
@@ -43,12 +45,12 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
 
 <section id="cal" class="scr c">
  <h1>Calibrate</h1><p id="calMsg" style="max-width:640px;font-size:20px"></p>
- <div style="width:60%;background:#222;border-radius:4px"><div id="bar"></div></div>
+ <div id="calIll" style="width:240px"></div><div style="width:60%;background:#222;border-radius:4px"><div id="bar"></div></div>
  <div class="row"><button id="calSkip">Skip step</button><button class="p" id="calGo">Start</button></div>
 </section>
 
 <section id="dash" class="scr">
- <div class="row"><h1>Wheel Align</h1><span class="sp"></span><button id="recal">Recalibrate</button></div>
+ <div class="row"><h1>Wheel Align</h1><span class="sp"></span><button id="stg"></button><button id="recal">Recalibrate</button></div>
  <div class="tiles">
   <button id="t-toe">Quick Align<small>Total toe, left then right</small></button>
   <button id="t-camber">Camber<small>Both wheels, vs gravity</small></button>
@@ -56,16 +58,18 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
   <button id="t-casL">Caster: left<small>15° out / 15° in sweep</small></button>
   <button id="t-casR">Caster: right<small>15° out / 15° in sweep</small></button>
   <button id="t-units">Units<small id="uLbl"></small></button>
+  <button id="t-veh">Vehicle &amp; specs<small id="vLbl"></small></button>
+  <button id="t-rep">Report<small>Print for the customer</small></button>
  </div>
 </section>
 
 <section id="meas" class="scr">
  <div class="row"><button id="back">Exit</button><div class="sp"><span id="mt" style="font-size:26px"></span><p id="mp"></p></div></div>
  <div class="main">
-  <div><div id="ill" style="width:100%"></div><p id="inst" style="font-size:20px"></p></div>
+  <div><div id="car" style="width:100%"></div><div id="ill" style="width:100%"></div><p id="inst" style="font-size:20px"></p></div>
   <div>
    <div class="rd"><button class="p" id="ready" style="font-size:28px;padding:22px 36px">Ready</button></div>
-   <div class="live"><div class="big" id="val"></div><div class="lvl" id="lvl"><i id="bub"></i></div><p id="sub"></p>
+   <div class="live"><div class="big" id="val"></div><div id="spec" style="font-size:20px"></div><div class="lvl" id="lvl"><i id="bub"></i></div><p id="sub"></p>
    <button class="p" id="cap" style="font-size:28px;padding:18px 48px">Save</button></div>
   </div>
  </div>
@@ -73,9 +77,21 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
 
 <section id="res" class="scr">
  <h1 id="rt"></h1><table id="rb"></table><p id="rn"></p><span class="sp"></span>
- <div class="row"><button id="redo">Measure again</button><button class="p" id="done">Done</button></div>
+ <div class="row"><button id="redo">Measure again</button><button id="toRep">Report</button><button class="p" id="done">Done</button></div>
 </section>
 
+<section id="veh" class="scr sc">
+ <div class="row"><h1>Vehicle &amp; specs</h1><span class="sp"></span><button id="vCopy">Copy specs JSON</button><button class="p" id="vOk">Save</button></div>
+ <div class="g3"><select id="vy"></select><select id="vm"></select><select id="vd"></select></div>
+ <p id="vMsg"></p><p>Specs in decimal degrees (for example 0.17 is 0° 10'). Total toe is entered as the whole-axle value.</p>
+ <table id="vsp"></table>
+</section>
+<section id="repS" class="scr sc">
+ <div class="row"><h1>Report</h1><span class="sp"></span><button id="rBack">Back</button><button class="p" id="rPrint">Print or save PDF</button></div>
+ <div class="g3"><input id="r_shop" placeholder="Shop name"><input id="r_cust" placeholder="Customer"><input id="r_tech" placeholder="Technician"><input id="r_plate" placeholder="Plate or VIN"><input id="r_odo" placeholder="Odometer"><button id="rNew">New job</button></div>
+ <textarea id="r_note" rows="3" placeholder="Notes and recommendations"></textarea>
+</section>
+<div id="rep"></div>
 <script>
 /* MATH (all angles in degrees; D=pi/180)
  R = Rz(alpha)·Rx(beta)·Ry(gamma)  (W3C device->earth; earth X=E, Y=N, Z=up)
@@ -124,7 +140,7 @@ const CM=[
 let cu=null,c1=null;
 const ap=(m,u)=>[m[0]*u[0]+m[1]*u[1]+m[2]*u[2],m[3]*u[0]+m[4]*u[1]+m[5]*u[2],m[6]*u[0]+m[7]*u[1]+m[8]*u[2]];
 const cMsg=m=>{q('#calMsg').textContent=m};
-function calStep(i){cs=i;cMsg(CM[i][0]);q('#calGo').textContent=CM[i][1];q('#bar').style.width=0;q('#calGo').disabled=false;show('cal')}
+function calStep(i){cs=i;q('#calIll').innerHTML=CI[i];cMsg(CM[i][0]);q('#calGo').textContent=CM[i][1];q('#bar').style.width=0;q('#calGo').disabled=false;show('cal')}
 const calStart=()=>calStep(0);
 const prog=async s=>{for(let i=0;i<=s*10;i++){q('#bar').style.width=i*10/s+'%';await sl(100)}};
 async function avg(){buf=[];await prog(4);const b=buf,n=b.length;buf=null;if(n<10)return null;
@@ -154,14 +170,18 @@ const WN={L:'Left',R:'Right',FL:'Front left',FR:'Front right',RL:'Rear left',RR:
 const INST={toe:'Rest the phone on the adapter with its long bottom edge against the rim. Screen faces up.',camber:'Hold the back of the phone flat on the wheel face, landscape, screen facing away from the car.'};
 
 /* flows */
-const row=(a,b,c)=>`<tr><td>${a}${c?'<br><small>'+c+'</small>':''}</td><td>${b}</td></tr>`;
+const ITEMS=[['camFL','Front left camber','camF',1,'+ is top of wheel out'],['camFR','Front right camber','camF',1,''],['casL','Left caster','casF',1,'+ is top of steering axis rearward'],['casR','Right caster','casF',1,''],
+['toeFL','Front left toe','toeF',.5,'+ is toe-in'],['toeFR','Front right toe','toeF',.5,''],['toeF','Front total toe','toeF',1,'+ is toe-in'],
+['toeRL','Rear left toe','toeR',.5,''],['toeRR','Rear right toe','toeR',.5,''],['toeR','Rear total toe','toeR',1,''],['thr','Thrust angle','thr',1,'+ is right']];
+const ev=(k,v,h)=>{const s=specs()[k];if(!s||s[0]==null||s[1]==null)return null;const t=s[0]*h,tol=Math.abs(s[1])*h;return{t,tol,d:v-t,ok:Math.abs(v-t)<=tol+1e-9}};
+const row=(a,b,c,k,v,h)=>{const e=k&&v!=null?ev(k,v,h):null;return`<tr><td>${a}${c?'<br><small>'+c+'</small>':''}</td><td class="${e?e.ok?'ok2':'no2':''}">${b}</td><td>${e?'<small>'+fmt(e.t)+' ± '+fmt(e.tol)+'</small>':''}</td></tr>`};
 const FL={
- toe:{t:'Quick Align: total toe',s:()=>['L','R'].map(w=>({k:'toe',w,id:w})),r:d=>[row('Total toe',fmt(w180(d.L-d.R)),'+ is toe-in, − is toe-out')]},
- camber:{t:'Camber',s:()=>['L','R'].map(w=>({k:'camber',w,id:w})),r:d=>[row('Left camber',fmt(d.L)),row('Right camber',fmt(d.R)),row('Cross camber (L − R)',fmt(d.L-d.R)),'<tr><td colspan=2><small>+ is top of wheel tilted out</small></td></tr>']},
- four:{t:'4-Wheel / Thrust',s:()=>['RL','RR','FL','FR'].map(w=>({k:'toe',w,id:w})),r:d=>{const Tt=(d.RL+d.RR)/2;return[row('Rear left toe',fmt(d.RL-Tt)),row('Rear right toe',fmt(-(d.RR-Tt))),row('Front left toe',fmt(d.FL-Tt)),row('Front right toe',fmt(-(d.FR-Tt))),row('Thrust angle',fmt(Tt-(d.FL+d.FR)/2),'rear thrust line vs front axle direction, + is right')]}},
- cas:{t:'Caster',s:w=>[{k:'zero',w,id:'z'},{k:'sweep',w,id:'o',tgt:15,np:1},{k:'sweep',w,id:'i',tgt:-15,np:1}],r:d=>{const o=d.o,i=d.i;return[row('Caster',fmt((o.c-i.c)/(Math.sin(o.a*D)+Math.sin(-i.a*D))),'+ is top of steering axis tilted rearward'),row('Camber, turned out',fmt(o.c),'at '+fmt(o.a)),row('Camber, turned in',fmt(i.c),'at '+fmt(i.a))]}}};
-function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},base:null};show('meas');step()}
-function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#mt').textContent=(WN[s.w]||'')+' wheel: '+({toe:'toe',camber:'camber',zero:'straight ahead',sweep:s.tgt>0?'turn '+s.tgt+'° OUT':'turn '+(-s.tgt)+'° IN, past centre'})[s.k];
+ toe:{t:'Quick Align: total toe',s:()=>['L','R'].map(w=>({k:'toe',w,id:w})),m:d=>({toeF:w180(d.L-d.R)})},
+ camber:{t:'Camber',s:()=>['L','R'].map(w=>({k:'camber',w,id:w})),m:d=>({camFL:d.L,camFR:d.R})},
+ four:{t:'4-Wheel / Thrust',s:()=>['RL','RR','FL','FR'].map(w=>({k:'toe',w,id:w})),m:d=>{const T=(d.RL+d.RR)/2;return{toeRL:d.RL-T,toeRR:-(d.RR-T),toeFL:d.FL-T,toeFR:-(d.FR-T),toeR:d.RL-d.RR,toeF:d.FL-d.FR,thr:T-(d.FL+d.FR)/2}}},
+ cas:{t:'Caster',s:w=>[{k:'zero',w,id:'z'},{k:'sweep',w,id:'o',tgt:15,np:1},{k:'sweep',w,id:'i',tgt:-15,np:1}],m:(d,w)=>({['cas'+w]:(d.o.c-d.i.c)/(Math.sin(d.o.a*D)+Math.sin(-d.i.a*D))})}};
+function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},cv:{},base:null};show('meas');step()}
+function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#car').innerHTML=carSVG(wk(s.w),F.cv);q('#mt').textContent=(WN[s.w]||'')+' wheel: '+({toe:'toe',camber:'camber',zero:'straight ahead',sweep:s.tgt>0?'turn '+s.tgt+'° OUT':'turn '+(-s.tgt)+'° IN, past centre'})[s.k];
  q('#mp').textContent=F.f.t+'. Step '+(F.i+1)+' of '+F.steps.length;
  q('#ill').innerHTML=s.k=='toe'?ILL.toe:ILL.cam;q('#inst').textContent=s.k=='toe'||s.k=='camber'||!s.np&&s.k=='zero'?INST[s.k=='toe'?'toe':'camber']:s.k=='zero'?'':'Turn the steering wheel until the angle reaches the target. Keep the phone flat on the wheel.';
  if(s.k=='zero'&&!s.np)q('#inst').textContent=INST.camber+' Point the wheels straight ahead.';
@@ -169,13 +189,70 @@ function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#mt').textContent=(WN[s
 q('#ready').onclick=()=>{const s=F.steps[F.i];if(s.k=='toe'&&F.base==null&&V)F.base=hY();F.stage=1;q('#meas').classList.remove('pl')};
 q('#cap').onclick=()=>{const s=F.steps[F.i];
  if(s.k=='toe')F.d[s.id]=w180(hY()-F.base);else if(s.k=='camber')F.d[s.id]=cam();
- else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};
- if(++F.i<F.steps.length)step();else{F.stage=0;q('#rt').textContent=F.f.t;q('#rb').innerHTML=F.f.r(F.d).join('');q('#rn').textContent='';show('res')}};
+ else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};F.cv[wk(s.w)]=s.k=='camber'?fmt(F.d[s.id]):'';
+ if(++F.i<F.steps.length)step();else{F.stage=0;const m=F.f.m(F.d,F.steps[0].w);Object.assign(RS.d[RS.st],m);saveR();q('#rt').textContent=F.f.t+' ('+RS.st+')';q('#rb').innerHTML=ITEMS.filter(i=>m[i[0]]!=null).map(i=>row(i[1],fmt(m[i[0]]),i[4],i[2],m[i[0]],i[3])).join('');q('#rn').textContent=Object.keys(specs()).length?'':'No specs for this vehicle yet. Add them under Vehicle & specs.';show('res')}};
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
 for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
-const upU=()=>q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';
+const upU=()=>{q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';q('#vLbl').textContent=RS.v.y?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Pick year, make, model';q('#stg').textContent='Stage: '+RS.st};
 q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
+
+/* visuals */
+const WP={FL:[22,24],FR:[78,24],RL:[22,76],RR:[78,76]};
+const wk=w=>({L:'FL',R:'FR'})[w]||w;
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function carSVG(act,vals){let s='<svg viewBox="-34 0 168 100"><rect x="30" y="8" width="40" height="84" rx="14" fill="#2b3a4a"/>';
+ for(const k in WP){const[x,y]=WP[k],has=vals&&k in vals;s+=`<rect x="${x-7}" y="${y-13}" width="14" height="26" rx="3" fill="${k==act?'#4aa8ff':has?'#19e36b':'#667'}"/>`;
+  if(has&&vals[k])s+=`<text x="${x<50?x-10:x+10}" y="${y+2}" font-size="8" font-weight="700" fill="currentColor" text-anchor="${x<50?'end':'start'}">${esc(vals[k])}</text>`}
+ return s+'<text x="50" y="22" font-size="7" fill="#9aa7b5" text-anchor="middle">FRONT</text></svg>'}
+const UP='<path d="M110 70V38" stroke="#19e36b" stroke-width="5"/><path d="M110 28l-10 14h20z" fill="#19e36b"/>',
+ SPIN='<path d="M55 60A55 30 0 0 1 165 60" stroke="#ffb020" stroke-width="5" fill="none"/><path d="M172 66l-8-16-10 12z" fill="#ffb020"/>',
+ flat=(t,sp)=>`<svg viewBox="0 0 220 130"><rect x="10" y="98" width="200" height="12" fill="#555"/><rect x="45" y="78" width="130" height="20" rx="4" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/>${sp?SPIN:UP}<text x="110" y="124" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">${t}</text></svg>`,
+ wall=(t,sp)=>`<svg viewBox="0 0 220 130"><rect x="20" y="5" width="14" height="120" fill="#555"/><rect x="38" y="20" width="14" height="90" rx="3" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/>${sp?'<path d="M85 28A38 38 0 0 1 85 102" stroke="#ffb020" stroke-width="5" fill="none"/><path d="M85 110l-6-16 14 2z" fill="#ffb020"/>':'<path d="M62 65h70" stroke="#19e36b" stroke-width="5"/><path d="M142 65l-14-9v18z" fill="#19e36b"/>'}<text x="140" y="${sp?70:50}" fill="#fff" font-size="14" font-weight="700">${t}</text></svg>`;
+const CI=[flat('SCREEN UP, FLAT SURFACE'),flat('SPIN 180° IN PLACE',1),flat('KEEP STILL 10 s'),wall('SCREEN OUT'),wall('TURN UPSIDE DOWN',1)];
+/* vehicle, specs, stage, report */
+let RS={v:{},st:'before',d:{before:{},after:{}},c:{}},SP={},FSP={},MK=null;
+try{RS={...RS,...JSON.parse(localStorage.alr)}}catch(e){}try{SP=JSON.parse(localStorage.als||'{}')}catch(e){}
+fetch('specs.json').then(r=>r.json()).then(j=>FSP=j).catch(()=>{});
+const saveR=()=>{try{localStorage.alr=JSON.stringify(RS);localStorage.als=JSON.stringify(SP)}catch(e){}};
+const vk=()=>RS.v.y&&RS.v.mk&&RS.v.md?[RS.v.y,RS.v.mk,RS.v.md].join('|').toUpperCase():'';
+const specs=()=>{const k=vk();return k?SP[k]||FSP[k]||FSP[k.split('|').slice(1).join('|')]||{}:{}};
+const SK=[['camF','Front camber'],['casF','Front caster'],['toeF','Front total toe'],['toeR','Rear total toe'],['thr','Thrust angle']];
+q('#vsp').innerHTML=SK.map(([k,l])=>`<tr><td>${l}</td><td><input type="number" step="any" id="s_${k}_0" placeholder="target"></td><td><input type="number" step="any" id="s_${k}_1" placeholder="± tolerance"></td></tr>`).join('');
+const spIn=()=>{const s=specs();SK.forEach(([k])=>[0,1].forEach(j=>{q(`#s_${k}_${j}`).value=s[k]&&s[k][j]!=null?s[k][j]:''}))};
+const collect=()=>{const k=vk();if(!k)return;const o={};SK.forEach(([s])=>{const t=q(`#s_${s}_0`).value,l=q(`#s_${s}_1`).value;if(t!==''&&l!=='')o[s]=[+t,Math.abs(+l)]});if(Object.keys(o).length)SP[k]=o;else delete SP[k];saveR()};
+const yrs=[];for(let y=new Date().getFullYear()+1;y>=1981;y--)yrs.push(String(y));
+const api=async p=>(await(await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/'+p+'?format=json')).json()).Results;
+function fillSel(id,l,cur,ph){const e=q(id);e.innerHTML=`<option value="">${ph}</option>`+l.map(x=>`<option>${esc(x)}</option>`).join('')+'<option value="__o">Other (type it)</option>';if(cur&&!l.includes(cur))e.insertBefore(new Option(cur,cur),e.lastChild);e.value=cur||''}
+async function loadMk(){if(MK)return;try{MK=JSON.parse(localStorage.almk)}catch(e){}
+ if(!MK){try{const r=await Promise.all(['car','truck','multipurpose'].map(t=>api('GetMakesForVehicleType/'+t)));MK=[...new Set(r.flat().map(x=>x.MakeName.trim()))].sort();try{localStorage.almk=JSON.stringify(MK)}catch(e){}}catch(e){MK=[];q('#vMsg').textContent='Could not reach the vehicle list. Choose "Other" to type entries.'}}}
+async function loadMd(){const v=RS.v;let l=[];if(v.y&&v.mk){try{l=[...new Set((await api(`GetModelsForMakeYear/make/${encodeURIComponent(v.mk)}/modelyear/${v.y}`)).map(x=>x.Model_Name))].sort()}catch(e){q('#vMsg').textContent='Could not reach the model list. Choose "Other" to type it.'}}fillSel('#vd',l,v.md,'Model')}
+async function vOpen(){show('veh');q('#vMsg').textContent='';await loadMk();fillSel('#vy',yrs,RS.v.y,'Year');fillSel('#vm',MK,RS.v.mk,'Make');await loadMd();spIn()}
+['#vy','#vm','#vd'].forEach(id=>q(id).onchange=async e=>{let v=e.target.value;if(v=='__o'){v=(prompt('Type it')||'').trim();if(!v){e.target.value='';return}e.target.insertBefore(new Option(v,v),e.target.lastChild);e.target.value=v}
+ const R=RS.v;RS.v=id=='#vy'?{y:v,mk:R.mk}:id=='#vm'?{y:R.y,mk:v}:{...R,md:v};if(id!='#vd')await loadMd();spIn()});
+q('#vOk').onclick=()=>{collect();saveR();upU();show('dash')};
+q('#vCopy').onclick=()=>{collect();try{navigator.clipboard.writeText(JSON.stringify(SP,null,1));q('#vMsg').textContent='Copied. Merge it into specs.json in your repo to keep it permanently.'}catch(e){q('#vMsg').textContent='Copy failed.'}};
+q('#t-veh').onclick=vOpen;q('#stg').onclick=()=>{RS.st=RS.st=='before'?'after':'before';saveR();upU()};
+/* live comparison against spec while measuring */
+function lsp(s,yaw){const d=F.d;if(F.k=='camber')return{v:cam(),k:'camF',h:1};
+ if(F.k=='toe'&&s.w=='R')return{v:w180(d.L-yaw),k:'toeF',h:1};
+ if(F.k=='four'){const T=(d.RL+d.RR)/2;if(s.w=='RR')return{v:d.RL-yaw,k:'toeR',h:1};if(s.w=='FL')return{v:yaw-T,k:'toeF',h:.5};if(s.w=='FR')return{v:-(yaw-T),k:'toeF',h:.5}}return null}
+/* report */
+const RF=['shop','cust','tech','plate','odo','note'];
+q('#t-rep').onclick=q('#toRep').onclick=()=>{RF.forEach(f=>q('#r_'+f).value=RS.c[f]||'');show('repS')};
+RF.forEach(f=>q('#r_'+f).oninput=e=>{RS.c[f]=e.target.value;saveR()});
+q('#rBack').onclick=()=>show('dash');
+q('#rNew').onclick=()=>{if(confirm('Clear all measurements and customer details?')){RS.d={before:{},after:{}};RS.c={};RS.st='before';saveR();upU();RF.forEach(f=>q('#r_'+f).value='')}};
+q('#rPrint').onclick=()=>{q('#rep').innerHTML=buildRep();window.print()};
+function buildRep(){const c=RS.c,v=RS.v,sp=specs(),B=RS.d.before,A=RS.d.after,f=x=>x==null?'':fmt(x),L='text-align:left';
+ const rows=ITEMS.filter(i=>B[i[0]]!=null||A[i[0]]!=null).map(([k,l,sk,h])=>{const s=sp[sk],x=A[k]!=null?A[k]:B[k],e=s&&ev(sk,x,h);
+  return`<tr><td>${l}</td><td>${f(B[k])}</td><td>${f(A[k])}</td><td>${s?fmt(s[0]*h)+' ± '+fmt(Math.abs(s[1])*h):'n/a'}</td><td class="${e?e.ok?'ok2':'no2':''}">${e?e.ok?'In spec':'Out of spec':''}</td></tr>`}).join('');
+ const Z=A.toeFL!=null?A:B,cv={};['FL','FR','RL','RR'].forEach(w=>{if(Z['toe'+w]!=null)cv[w]='Toe '+f(Z['toe'+w])});
+ return`<h1 style="font-size:22px;margin:0">${esc(c.shop||'Wheel alignment report')}</h1><p style="color:#444">${new Date().toLocaleString()}</p>
+<table style="margin:8px 0"><tr><td>Customer</td><td style="${L}">${esc(c.cust)}</td><td>Vehicle</td><td style="${L}">${esc([v.y,v.mk,v.md].filter(Boolean).join(' '))}</td></tr><tr><td>Plate / VIN</td><td style="${L}">${esc(c.plate)}</td><td>Odometer</td><td style="${L}">${esc(c.odo)}</td></tr><tr><td>Technician</td><td style="${L}" colspan=3>${esc(c.tech)}</td></tr></table>
+<table><tr><th>Measurement</th><th>Before</th><th>After</th><th>Spec</th><th>Status</th></tr>${rows||'<tr><td colspan=5>No measurements yet.</td></tr>'}</table>
+<div style="width:280px;margin:10px auto;color:#000">${carSVG('',cv)}</div><p><b>Notes:</b> ${esc(c.note)}</p>
+<p style="color:#555;font-size:11px">Positive toe is toe-in. Positive camber is top of wheel out. Positive caster is top of steering axis rearward. Status compares the After reading (or Before, if no After exists) with the vehicle spec. Measured with phone sensors. Calibration: yaw drift ${S.dr.toFixed(4)}°/s, adapter camber offset ${(+S.cx).toFixed(2)}°. Specs: ${Object.keys(sp).length?'entered by the shop':'not loaded'}. Units: ${S.dm?'degrees and minutes':'decimal degrees'}.</p>`}
 
 /* live display */
 function tick(){requestAnimationFrame(tick);try{if(F&&V&&F.stage&&F.steps[F.i]){const s=F.steps[F.i],ux=V[0],uy=V[1];let v,lv,b,sub='',tol=1;
@@ -183,7 +260,7 @@ function tick(){requestAnimationFrame(tick);try{if(F&&V&&F.stage&&F.steps[F.i]){
   else{lv=Math.abs(Math.asin(uy)/D);b=scr(0,uy);v=cam();sub='Level error '+lv.toFixed(1)+'°'}
   let ok=lv<tol;
   if(s.k=='sweep'){v=F.sg*w360(hZ()-F.h0);ok=ok&&Math.abs(v-s.tgt)<1;sub='Target '+fmt(s.tgt)+'. Camber now '+fmt(cam())}
-  q('#val').textContent=fmt(v);q('#sub').textContent=sub;q('#lvl').classList.toggle('ok',lv<tol);q('#cap').disabled=!ok;
-  const c=x=>Math.max(-62,Math.min(62,x*57.3*14))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}}catch(e){}}
+  const sp=s.k=='toe'||s.k=='camber'?lsp(s,v):null,e=sp&&ev(sp.k,sp.v,sp.h),sE=q('#spec');q('#val').textContent=fmt(sp?sp.v:v);q('#sub').textContent=sub;sE.textContent=e?'Spec '+fmt(e.t)+' ± '+fmt(e.tol)+'. Off by '+fmt(e.d):'';sE.className=e?e.ok?'ok2':'no2':'';q('#lvl').classList.toggle('ok',lv<tol);q('#cap').disabled=!ok;
+  const c=x=>Math.max(-50,Math.min(50,x*57.3*12))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}}catch(e){}}
 tick();
 </script></body></html>
