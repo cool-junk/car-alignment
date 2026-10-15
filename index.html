@@ -1,965 +1,622 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AeroAlign - Smartphone Wheel Alignment System</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        garage: {
-                            900: '#0B0F17',
-                            800: '#151C28',
-                            700: '#1F293D',
-                            accent: '#00E676',
-                            warning: '#FFEA00',
-                            danger: '#FF1744',
-                            cyan: '#00E5FF'
-                        }
-                    },
-                    fontFamily: {
-                        mono: ['JetBrains Mono', 'Courier New', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Three.js for 3D Visualizer -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <style>
-        /* Custom styling for sleek motorsport look */
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;600;700;900&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0B0F17;
-            color: #E2E8F0;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mobile Alignment System</title>
+<style>
+  :root {
+    --bg-dark: #0f1115;
+    --panel-bg: #1a1d24;
+    --text-main: #ffffff;
+    --text-muted: #8b92a5;
+    --accent-green: #00ff88;
+    --accent-blue: #00ccff;
+    --accent-red: #ff3366;
+    --border-color: #2a2e39;
+  }
 
-        .carbon-pattern {
-            background-color: #0d121d;
-            background-image: 
-                radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0),
-                radial-gradient(rgba(255, 255, 255, 0.05) 1px, #0b0f17 1px);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-        .neon-glow-green {
-            box-shadow: 0 0 15px rgba(0, 230, 118, 0.35);
-        }
+  body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
 
-        .neon-glow-cyan {
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
-        }
+  /* Header & Toolbar */
+  header {
+    background-color: var(--panel-bg);
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .brand { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; color: var(--text-main); }
+  .status-badges { display: flex; gap: 10px; font-size: 0.8rem; }
+  .badge { padding: 4px 8px; border-radius: 4px; background: #333; color: #aaa; }
+  .badge.active { background: rgba(0, 255, 136, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
 
-        .hud-border {
-            position: relative;
-        }
-        .hud-border::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 8px; height: 8px;
-            border-top: 2px solid #00E5FF;
-            border-left: 2px solid #00E5FF;
-        }
-        .hud-border::after {
-            content: '';
-            position: absolute;
-            bottom: 0; right: 0; width: 8px; height: 8px;
-            border-bottom: 2px solid #00E5FF;
-            border-right: 2px solid #00E5FF;
-        }
+  .toolbar {
+    display: flex;
+    overflow-x: auto;
+    background: var(--bg-dark);
+    padding: 10px;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .toolbar button {
+    flex: 0 0 auto;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .toolbar button.active {
+    background: rgba(0, 204, 255, 0.1);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+  }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #151C28;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2D3748;
-            border-radius: 3px;
-        }
-    </style>
+  /* Main Viewport */
+  .viewport {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  /* Top-Down Car UI */
+  .car-chassis {
+    position: relative;
+    width: 140px;
+    height: 300px;
+    border: 2px dashed var(--border-color);
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .car-chassis::after {
+    content: 'FRONT';
+    position: absolute;
+    top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+
+  .wheel {
+    position: absolute;
+    width: 30px;
+    height: 60px;
+    background: var(--panel-bg);
+    border: 2px solid var(--text-muted);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  .wheel.fl { top: 20px; left: -40px; }
+  .wheel.fr { top: 20px; right: -40px; }
+  .wheel.rl { bottom: 20px; left: -40px; }
+  .wheel.rr { bottom: 20px; right: -40px; }
+
+  .wheel.flashing {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    animation: flash 1s infinite alternate;
+  }
+  .wheel.measured {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+  }
+  @keyframes flash { from { opacity: 0.5; } to { opacity: 1; } }
+
+  /* HUD Overlays (Green Diamond & Blue Bar) */
+  .hud-container {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(15, 17, 21, 0.85);
+    z-index: 10;
+  }
+
+  .hud-crosshair {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+  }
+  .hud-crosshair::before, .hud-crosshair::after {
+    content: ''; position: absolute; background: rgba(255,255,255,0.2);
+  }
+  .hud-crosshair::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
+  .hud-crosshair::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
+  
+  .hud-target-circle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 40px; height: 40px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .green-diamond {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 20px; height: 20px;
+    background: var(--accent-red);
+    transform: translate(-50%, -50%) rotate(45deg);
+    transition: top 0.1s, left 0.1s, background 0.2s;
+  }
+
+  .blue-bar-container {
+    margin-top: 40px;
+    width: 250px;
+    height: 10px;
+    background: #fff;
+    position: relative;
+    border-radius: 5px;
+  }
+  .blue-bar {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--accent-blue);
+    border-radius: 5px;
+    transform-origin: center;
+    transition: transform 0.1s;
+    opacity: 0.8;
+  }
+
+  .hud-readout {
+    margin-top: 30px;
+    font-size: 2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bottom Panel & Prompts */
+  .bottom-panel {
+    background: var(--panel-bg);
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-height: 180px;
+  }
+
+  .instruction-text {
+    font-size: 1.1rem;
+    text-align: center;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .action-btn {
+    background: var(--accent-green);
+    color: #000;
+    border: none;
+    padding: 18px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+  }
+  .action-btn:active { transform: scale(0.98); }
+  .action-btn:disabled {
+    background: #333; color: #777; box-shadow: none; cursor: not-allowed;
+  }
+
+  /* Specs Overlay */
+  .specs-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-dark);
+    z-index: 20;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+  }
+  .specs-overlay h2 { margin-bottom: 20px; }
+  .specs-overlay select {
+    width: 100%; padding: 15px; background: var(--panel-bg); border: 1px solid var(--border-color);
+    color: white; font-size: 1rem; border-radius: 8px; margin-bottom: 20px;
+  }
+  .close-specs { background: #333; color: white; padding: 15px; border: none; border-radius: 8px; margin-top: auto; font-size: 1.1rem; font-weight: bold;}
+
+  /* Data Table */
+  .results-table {
+    width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;
+  }
+  .results-table th, .results-table td {
+    padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color);
+  }
+  .results-table th { color: var(--text-muted); font-weight: normal; }
+
+  #permission-screen {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    background: var(--bg-dark); z-index: 100;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 30px; text-align: center; gap: 20px;
+  }
+
+</style>
 </head>
-<body class="carbon-pattern min-h-screen flex flex-col justify-between overflow-x-hidden text-sm">
+<body>
 
-    <!-- Header / Navbar -->
-    <header class="bg-garage-800/90 border-b border-gray-800 backdrop-blur-md sticky top-0 z-50 px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 bg-gradient-to-tr from-garage-accent to-garage-cyan rounded-lg flex items-center justify-center text-slate-950 font-black text-xl shadow-lg">
-                <i data-lucide="gauge" class="w-6 h-6"></i>
-            </div>
-            <div>
-                <h1 class="font-black tracking-wider text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-garage-cyan">AERO<span class="text-garage-accent">ALIGN</span></h1>
-                <p class="text-[10px] text-gray-400 -mt-1 font-mono">PRO ALIGNMENT SUITE v2.4</p>
-            </div>
-        </div>
+  <div id="permission-screen">
+    <h2>Mobile Alignment System</h2>
+    <p style="color: #aaa">To emulate the Gyraline workflow, this app requires access to your device's gyroscope and accelerometer.</p>
+    <button class="action-btn" id="btn-grant-sensors" style="width: 100%;">Grant Sensor Access</button>
+  </div>
 
-        <div class="flex items-center space-x-2">
-            <!-- iOS Motion Permission Button -->
-            <button id="btn-permission" onclick="requestMotionPermission()" class="bg-garage-cyan/20 border border-garage-cyan text-garage-cyan hover:bg-garage-cyan/30 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
-                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                <span id="perm-status">Sensors: Grant Access</span>
-            </button>
-            <button onclick="toggleModal('guide-modal')" class="p-2 bg-garage-700 hover:bg-gray-700 rounded-lg text-gray-300 transition" title="Setup Guide">
-                <i data-lucide="help-circle" class="w-5 h-5"></i>
-            </button>
-        </div>
-    </header>
+  <header>
+    <div class="brand">ALIGNMENT PRO</div>
+    <div class="status-badges">
+      <div id="badge-cal" class="badge">Uncalibrated</div>
+      <div id="badge-sensor" class="badge">Sensors Off</div>
+    </div>
+  </header>
 
-    <!-- Main App Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+  <div class="toolbar" id="toolbar">
+    <button data-mode="CALIBRATE">Calibrate Offset</button>
+    <button data-mode="QUICK">Quick Align</button>
+    <button data-mode="CAMBER">Camber</button>
+    <button data-mode="CASTER">Caster</button>
+    <button data-mode="SPECS">Specs Database</button>
+  </div>
 
-        <!-- Left Column: Live Sensor HUD & Controls (5 Cols) -->
-        <section class="lg:col-span-5 flex flex-col gap-4">
-
-            <!-- Sensor Telemetry Bar & Level Indicator -->
-            <div class="bg-garage-800/80 border border-gray-800 rounded-xl p-4 shadow-xl backdrop-blur-sm relative overflow-hidden">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-garage-accent animate-pulse"></span>
-                        <span class="text-xs font-mono font-semibold uppercase text-gray-400">Live Gyro Telemetry</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs font-mono">
-                        <span class="text-gray-400">Filter Smoothness:</span>
-                        <input id="filter-slider" type="range" min="0.01" max="0.5" step="0.01" value="0.1" class="w-20 accent-garage-accent cursor-pointer" oninput="updateFilter(this.value)">
-                    </div>
-                </div>
-
-                <!-- Digital Level Bubble HUD -->
-                <div class="grid grid-cols-3 gap-2 mb-4 bg-garage-900/90 p-3 rounded-lg border border-gray-800/80">
-                    <div class="text-center">
-                        <span class="text-[10px] text-gray-400 block font-mono">PITCH (X)</span>
-                        <span id="val-pitch" class="text-lg md:text-xl font-mono font-bold text-garage-cyan">+0.00°</span>
-                    </div>
-                    <div class="text-center border-x border-gray-800">
-                        <span class="text-[10px] text-gray-400 block font-mono">ROLL (Y)</span>
-                        <span id="val-roll" class="text-lg md:text-xl font-mono font-bold text-garage-accent">+0.00°</span>
-                    </div>
-                    <div class="text-center">
-                        <span class="text-[10px] text-gray-400 block font-mono">YAW (Z)</span>
-                        <span id="val-yaw" class="text-lg md:text-xl font-mono font-bold text-garage-warning">0.00°</span>
-                    </div>
-                </div>
-
-                <!-- Graphical Bullseye Digital Level -->
-                <div class="relative w-full h-32 bg-garage-900 rounded-lg border border-gray-800 flex items-center justify-center overflow-hidden">
-                    <!-- Concentric Rings -->
-                    <div class="absolute w-24 h-24 border border-gray-700/60 rounded-full"></div>
-                    <div class="absolute w-12 h-12 border border-gray-700/60 rounded-full"></div>
-                    <div class="absolute w-full h-[1px] bg-gray-800"></div>
-                    <div class="absolute h-full w-[1px] bg-gray-800"></div>
-                    <!-- Bullseye Bubble Pointer -->
-                    <div id="bullseye-bubble" class="absolute w-6 h-6 bg-garage-accent/80 rounded-full border-2 border-white shadow-lg transition-all duration-75 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2" style="top: 50%; left: 50%;">
-                        <div class="w-1.5 h-1.5 bg-slate-900 rounded-full"></div>
-                    </div>
-                    <span class="absolute bottom-1 right-2 text-[10px] font-mono text-gray-500">LEVEL CHECK</span>
-                </div>
-
-                <!-- Zero / Calibration Buttons -->
-                <div class="flex gap-2 mt-3">
-                    <button onclick="zeroSensors()" class="flex-1 bg-garage-700 hover:bg-slate-700 text-white font-medium py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-garage-cyan"></i>
-                        Zero Relative Tilt
-                    </button>
-                    <button onclick="resetZero()" class="bg-garage-900 hover:bg-gray-800 text-gray-400 border border-gray-700 px-3 py-2 rounded-lg text-xs transition">
-                        Reset Zero
-                    </button>
-                </div>
-            </div>
-
-            <!-- Active Wheel Selector & Specs Configuration -->
-            <div class="bg-garage-800/80 border border-gray-800 rounded-xl p-4 shadow-xl backdrop-blur-sm">
-                <h3 class="text-xs font-mono font-bold uppercase tracking-wider text-gray-300 mb-3 flex items-center justify-between">
-                    <span>Target Vehicle Specs</span>
-                    <button onclick="toggleModal('specs-modal')" class="text-garage-cyan text-[11px] hover:underline flex items-center gap-1">
-                        <i data-lucide="edit-3" class="w-3 h-3"></i> Edit Specs
-                    </button>
-                </h3>
-
-                <!-- Preset Car Selector -->
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <div>
-                        <label class="text-[10px] text-gray-400 block mb-1">Preset Profile</label>
-                        <select id="preset-select" onchange="loadPresetSpec(this.value)" class="w-full bg-garage-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:border-garage-cyan focus:outline-none">
-                            <option value="sports">Sports / Performance</option>
-                            <option value="sedan" selected>Standard Sedan / OEM</option>
-                            <option value="suv">SUV / Truck</option>
-                            <option value="track">Aggressive Track / Race</option>
-                            <option value="custom">Custom Specification</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-gray-400 block mb-1">Wheel Rim Size</label>
-                        <select id="rim-size" onchange="updateUnits()" class="w-full bg-garage-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:border-garage-cyan focus:outline-none">
-                            <option value="15">15 Inch</option>
-                            <option value="16">16 Inch</option>
-                            <option value="17">17 Inch</option>
-                            <option value="18" selected>18 Inch</option>
-                            <option value="19">19 Inch</option>
-                            <option value="20">20 Inch</option>
-                            <option value="21">21 Inch</option>
-                            <option value="22">22 Inch</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Current Active Wheel Position Picker -->
-                <label class="text-[10px] text-gray-400 block mb-1">Selected Wheel Position</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-wheel-FL" onclick="setActiveWheel('FL')" class="wheel-btn bg-garage-cyan/20 border-2 border-garage-cyan text-white p-2 rounded-lg text-xs font-bold flex items-center justify-between">
-                        <span>Front Left (FL)</span>
-                        <i data-lucide="disc" class="w-4 h-4 text-garage-cyan"></i>
-                    </button>
-                    <button id="btn-wheel-FR" onclick="setActiveWheel('FR')" class="wheel-btn bg-garage-900 border border-gray-700 text-gray-400 p-2 rounded-lg text-xs font-bold flex items-center justify-between">
-                        <span>Front Right (FR)</span>
-                        <i data-lucide="disc" class="w-4 h-4"></i>
-                    </button>
-                    <button id="btn-wheel-RL" onclick="setActiveWheel('RL')" class="wheel-btn bg-garage-900 border border-gray-700 text-gray-400 p-2 rounded-lg text-xs font-bold flex items-center justify-between">
-                        <span>Rear Left (RL)</span>
-                        <i data-lucide="disc" class="w-4 h-4"></i>
-                    </button>
-                    <button id="btn-wheel-RR" onclick="setActiveWheel('RR')" class="wheel-btn bg-garage-900 border border-gray-700 text-gray-400 p-2 rounded-lg text-xs font-bold flex items-center justify-between">
-                        <span>Rear Right (RR)</span>
-                        <i data-lucide="disc" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sound & Audio Cue Toggle -->
-            <div class="bg-garage-800/80 border border-gray-800 rounded-xl p-3 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="volume-2" class="w-4 h-4 text-garage-cyan"></i>
-                    <span class="text-xs font-medium">Alignment Audio Feedback Beeps</span>
-                </div>
-                <input type="checkbox" id="audio-toggle" class="w-4 h-4 accent-garage-accent cursor-pointer" checked>
-            </div>
-
-        </section>
-
-        <!-- Right Column: Alignment Mode Tabs & Measurement Wizards (7 Cols) -->
-        <section class="lg:col-span-7 flex flex-col gap-4">
-
-            <!-- Mode Selector Tabs -->
-            <div class="bg-garage-800 border border-gray-800 p-1.5 rounded-xl grid grid-cols-4 gap-1">
-                <button id="tab-camber" onclick="switchMode('camber')" class="mode-tab bg-garage-cyan text-slate-950 font-bold py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1 shadow-md">
-                    <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Camber
-                </button>
-                <button id="tab-toe" onclick="switchMode('toe')" class="mode-tab text-gray-400 hover:text-white font-medium py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1">
-                    <i data-lucide="compass" class="w-3.5 h-3.5"></i> Toe Sweep
-                </button>
-                <button id="tab-caster" onclick="switchMode('caster')" class="mode-tab text-gray-400 hover:text-white font-medium py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1">
-                    <i data-lucide="rotate-3d" class="w-3.5 h-3.5"></i> Caster Sweep
-                </button>
-                <button id="tab-visual" onclick="switchMode('visual')" class="mode-tab text-gray-400 hover:text-white font-medium py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1">
-                    <i data-lucide="box" class="w-3.5 h-3.5"></i> 3D Car View
-                </button>
-            </div>
-
-            <!-- PANELS -->
-
-            <!-- 1. CAMBER PANEL -->
-            <div id="panel-camber" class="mode-panel bg-garage-800/80 border border-gray-800 rounded-xl p-5 shadow-xl flex flex-col justify-between min-h-[380px]">
-                <div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                                Live Camber Angle
-                                <span class="text-xs font-normal text-gray-400">(Vertical Wheel Tilt)</span>
-                            </h2>
-                            <p class="text-xs text-gray-400">Hold phone flat vertically against the wheel rim or center hub.</p>
-                        </div>
-                        <div id="camber-status-badge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-gray-700 text-gray-300">
-                            CHECKING...
-                        </div>
-                    </div>
-
-                    <!-- Main Camber Readout Gauge -->
-                    <div class="flex flex-col items-center justify-center py-6 bg-garage-900/90 rounded-xl border border-gray-800 relative">
-                        <span id="camber-readout" class="text-5xl md:text-6xl font-mono font-black text-white tracking-tight">-1.20°</span>
-                        <span id="camber-linear" class="text-xs font-mono text-garage-cyan mt-2">Linear Offset: -0.15 in / -3.8 mm</span>
-
-                        <!-- Target Range Indicator Bar -->
-                        <div class="w-3/4 max-w-sm mt-6">
-                            <div class="flex justify-between text-[10px] font-mono text-gray-400 mb-1">
-                                <span id="camber-min-label">Min: -1.80°</span>
-                                <span id="camber-target-label" class="text-garage-accent font-bold">Target: -1.50°</span>
-                                <span id="camber-max-label">Max: -1.20°</span>
-                            </div>
-                            <div class="w-full h-3 bg-gray-800 rounded-full relative overflow-hidden border border-gray-700">
-                                <!-- Target Zone Highlight -->
-                                <div id="camber-target-bar" class="absolute h-full bg-garage-accent/30 border-x border-garage-accent" style="left: 30%; width: 40%;"></div>
-                                <!-- Current Value Marker -->
-                                <div id="camber-marker" class="absolute top-0 bottom-0 w-2 bg-white rounded-full transform -translate-x-1/2 shadow-md transition-all duration-150" style="left: 50%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex gap-3">
-                    <button onclick="saveMeasurement('camber')" class="flex-1 bg-garage-accent hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-lg active:scale-95">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i>
-                        Record Camber Measurement
-                    </button>
-                </div>
-            </div>
-
-            <!-- 2. TOE ANGLE SWEEP PANEL -->
-            <div id="panel-toe" class="mode-panel hidden bg-garage-800/80 border border-gray-800 rounded-xl p-5 shadow-xl flex flex-col justify-between min-h-[380px]">
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">Guided Toe Alignment Sweep</h2>
-                            <p class="text-xs text-gray-400">Calculates toe in/out using angular reference positioning.</p>
-                        </div>
-                        <span id="toe-step-badge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-garage-cyan/20 text-garage-cyan">STEP 1 / 3</span>
-                    </div>
-
-                    <!-- Wizard Progress Visualizer -->
-                    <div class="grid grid-cols-3 gap-2 my-4">
-                        <div id="toe-step1-card" class="bg-garage-900 border-2 border-garage-cyan p-3 rounded-lg text-center">
-                            <span class="text-[10px] text-gray-400 block font-mono">1. TURN OUT</span>
-                            <span class="text-xs font-bold text-white">Turn Wheel 15° Out</span>
-                        </div>
-                        <div id="toe-step2-card" class="bg-garage-900 border border-gray-800 p-3 rounded-lg text-center opacity-50">
-                            <span class="text-[10px] text-gray-400 block font-mono">2. CENTER</span>
-                            <span class="text-xs font-bold text-white">Return to Center</span>
-                        </div>
-                        <div id="toe-step3-card" class="bg-garage-900 border border-gray-800 p-3 rounded-lg text-center opacity-50">
-                            <span class="text-[10px] text-gray-400 block font-mono">3. TURN IN</span>
-                            <span class="text-xs font-bold text-white">Turn Wheel 15° In</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-garage-900 p-6 rounded-xl border border-gray-800 text-center relative overflow-hidden">
-                        <span class="text-xs text-gray-400 font-mono block mb-1">LIVE YAW / STEER ANGLE</span>
-                        <span id="toe-live-yaw" class="text-4xl font-mono font-extrabold text-garage-cyan">0.00°</span>
-                        <p id="toe-instruction" class="text-xs text-garage-warning mt-3 font-medium">Align phone with wheel rim facing straight, then press Capture Start Position.</p>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex gap-3">
-                    <button id="toe-wizard-btn" onclick="advanceToeWizard()" class="flex-1 bg-garage-cyan hover:bg-cyan-400 text-slate-950 font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-lg">
-                        <i data-lucide="play" class="w-4 h-4"></i>
-                        Capture Step 1 (15° Out)
-                    </button>
-                    <button onclick="resetToeWizard()" class="bg-garage-700 hover:bg-gray-700 text-gray-300 px-4 py-3 rounded-lg text-xs font-bold">
-                        Reset Sweep
-                    </button>
-                </div>
-            </div>
-
-            <!-- 3. CASTER ANGLE SWEEP PANEL -->
-            <div id="panel-caster" class="mode-panel hidden bg-garage-800/80 border border-gray-800 rounded-xl p-5 shadow-xl flex flex-col justify-between min-h-[380px]">
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h2 class="text-lg font-bold text-white">Caster Angle Sweep Wizard</h2>
-                            <p class="text-xs text-gray-400">Measures front kingpin inclination via steering sweep camber delta.</p>
-                        </div>
-                        <span id="caster-step-badge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-garage-warning/20 text-garage-warning">READY</span>
-                    </div>
-
-                    <div class="bg-garage-900/90 border border-gray-800 rounded-xl p-4 my-3 space-y-3">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-gray-400">Steer 20° Out Camber:</span>
-                            <span id="caster-out-val" class="font-mono font-bold text-white">--°</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs border-t border-gray-800 pt-2">
-                            <span class="text-gray-400">Steer 20° In Camber:</span>
-                            <span id="caster-in-val" class="font-mono font-bold text-white">--°</span>
-                        </div>
-                        <div class="flex justify-between items-center text-sm border-t border-gray-800 pt-2 font-bold">
-                            <span class="text-garage-accent">Calculated Caster Angle:</span>
-                            <span id="caster-result" class="text-2xl font-mono text-garage-accent">+0.00°</span>
-                        </div>
-                    </div>
-
-                    <div class="p-3 bg-garage-700/30 border border-garage-cyan/30 rounded-lg flex items-center gap-3">
-                        <i data-lucide="info" class="w-5 h-5 text-garage-cyan shrink-0"></i>
-                        <p class="text-[11px] text-gray-300">Sweep wheel from 20 degrees OUT to 20 degrees IN. The app automatically calculates true front caster.</p>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex gap-3">
-                    <button id="caster-btn" onclick="startCasterSweep()" class="flex-1 bg-garage-warning hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-lg">
-                        <i data-lucide="compass" class="w-4 h-4"></i>
-                        Start Caster Sweep
-                    </button>
-                </div>
-            </div>
-
-            <!-- 4. VISUAL 3D WHEEL ALIGNMENT DASHBOARD -->
-            <div id="panel-visual" class="mode-panel hidden bg-garage-800/80 border border-gray-800 rounded-xl p-4 shadow-xl flex flex-col justify-between min-h-[380px]">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                        <i data-lucide="3d-cube" class="w-4 h-4 text-garage-cyan"></i>
-                        Interactive Vehicle Alignment View
-                    </h2>
-                    <span class="text-[10px] text-gray-400 font-mono">DRAG TO ROTATE 3D</span>
-                </div>
-
-                <!-- Three.js Canvas Container -->
-                <div id="canvas-container" class="w-full h-64 bg-garage-900 rounded-lg border border-gray-800 relative overflow-hidden">
-                    <div class="absolute top-2 left-2 z-10 space-y-1 bg-garage-900/80 p-2 rounded backdrop-blur border border-gray-800 text-[10px] font-mono">
-                        <div>FL Camber: <span id="dash-FL-camber" class="text-garage-accent">-1.50°</span></div>
-                        <div>FR Camber: <span id="dash-FR-camber" class="text-garage-accent">-1.48°</span></div>
-                        <div>RL Camber: <span id="dash-RL-camber" class="text-garage-accent">-1.20°</span></div>
-                        <div>RR Camber: <span id="dash-RR-camber" class="text-garage-accent">-1.22°</span></div>
-                    </div>
-                </div>
-
-                <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-mono">
-                    <div class="bg-garage-900 p-2 rounded border border-gray-800">
-                        <span class="text-gray-400 text-[10px] block">TOTAL FRONT TOE</span>
-                        <span id="dash-front-toe" class="text-garage-cyan font-bold">+0.10° (+1/16")</span>
-                    </div>
-                    <div class="bg-garage-900 p-2 rounded border border-gray-800">
-                        <span class="text-gray-400 text-[10px] block">TOTAL REAR TOE</span>
-                        <span id="dash-rear-toe" class="text-garage-cyan font-bold">+0.12° (+3/32")</span>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-    </main>
-
-    <!-- Measurement Log & Report Summary Bar -->
-    <footer class="bg-garage-800 border-t border-gray-800 p-4 mt-6">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-garage-700 flex items-center justify-center text-garage-accent">
-                    <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                </div>
-                <div>
-                    <h4 class="text-xs font-bold text-white">Vehicle Alignment Measurement Summary</h4>
-                    <p class="text-[11px] text-gray-400" id="summary-text">FL: -1.20° | FR: -- | RL: -- | RR: --</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button onclick="exportReport()" class="flex-1 sm:flex-none bg-garage-700 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
-                    <i data-lucide="download" class="w-3.5 h-3.5 text-garage-cyan"></i>
-                    Export JSON
-                </button>
-                <button onclick="window.print()" class="flex-1 sm:flex-none bg-garage-cyan hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition">
-                    <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                    Print Report
-                </button>
-            </div>
-        </div>
-    </footer>
-
-    <!-- MODAL 1: SETUP & MOUNTING GUIDE -->
-    <div id="guide-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-garage-800 border border-gray-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="toggleModal('guide-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            
-            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <i data-lucide="wrench" class="w-5 h-5 text-garage-cyan"></i>
-                Smartphone Alignment Setup Guide
-            </h3>
-            
-            <div class="space-y-4 text-xs text-gray-300 mt-4">
-                <div class="p-3 bg-garage-900 rounded-lg border border-gray-800 flex items-start gap-3">
-                    <span class="w-6 h-6 rounded-full bg-garage-cyan text-slate-950 font-bold flex items-center justify-center shrink-0">1</span>
-                    <div>
-                        <h4 class="font-bold text-white mb-0.5">Mounting Adapter / Jig</h4>
-                        <p class="text-gray-400">Place your phone in a flat alignment adapter frame, tripod plate, or hold it flush against the outer wheel lip or center hub cap.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 bg-garage-900 rounded-lg border border-gray-800 flex items-start gap-3">
-                    <span class="w-6 h-6 rounded-full bg-garage-cyan text-slate-950 font-bold flex items-center justify-center shrink-0">2</span>
-                    <div>
-                        <h4 class="font-bold text-white mb-0.5">Zero Offsets & Leveling</h4>
-                        <p class="text-gray-400">Before taking readings, calibrate the level on a known level surface or zero out vertical jig offset using the 'Zero Relative Tilt' button.</p>
-                    </div>
-                </div>
-
-                <div class="p-3 bg-garage-900 rounded-lg border border-gray-800 flex items-start gap-3">
-                    <span class="w-6 h-6 rounded-full bg-garage-cyan text-slate-950 font-bold flex items-center justify-center shrink-0">3</span>
-                    <div>
-                        <h4 class="font-bold text-white mb-0.5">Steering Turn Sweeps</h4>
-                        <p class="text-gray-400">For Caster & Toe sweeps, use turn plates or low-friction tiles under front tires to ensure smooth turning without tire scrubbing strain.</p>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="toggleModal('guide-modal')" class="w-full mt-6 bg-garage-cyan text-slate-950 font-bold py-2.5 rounded-lg text-xs">
-                Got It, Let's Align
-            </button>
-        </div>
+  <div class="viewport">
+    <div class="car-chassis">
+      <div class="wheel fl" data-wheel="FL">FL</div>
+      <div class="wheel fr" data-wheel="FR">FR</div>
+      <div class="wheel rl" data-wheel="RL">RL</div>
+      <div class="wheel rr" data-wheel="RR">RR</div>
     </div>
 
-    <!-- MODAL 2: EDIT TARGET SPECS -->
-    <div id="specs-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-garage-800 border border-gray-700 rounded-xl max-w-md w-full p-6 shadow-2xl relative">
-            <button onclick="toggleModal('specs-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            
-            <h3 class="text-lg font-bold text-white mb-4">Edit Target Specifications</h3>
-
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="text-gray-400 block mb-1">Target Camber (Degrees)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input id="edit-camber-target" type="number" step="0.1" value="-1.5" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono">
-                        <input id="edit-camber-tol" type="number" step="0.1" value="0.3" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono" placeholder="Tolerance ±">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-gray-400 block mb-1">Target Toe (Degrees)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input id="edit-toe-target" type="number" step="0.05" value="0.10" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono">
-                        <input id="edit-toe-tol" type="number" step="0.05" value="0.05" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono" placeholder="Tolerance ±">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-gray-400 block mb-1">Target Caster (Degrees)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input id="edit-caster-target" type="number" step="0.1" value="6.0" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono">
-                        <input id="edit-caster-tol" type="number" step="0.1" value="0.5" class="bg-garage-900 border border-gray-700 p-2 rounded text-white font-mono" placeholder="Tolerance ±">
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="saveCustomSpecs()" class="w-full mt-6 bg-garage-accent text-slate-950 font-bold py-2.5 rounded-lg text-xs">
-                Save Target Specifications
-            </button>
-        </div>
+    <div class="hud-container" id="hud">
+      <div class="hud-crosshair">
+        <div class="hud-target-circle"></div>
+        <div class="green-diamond" id="diamond"></div>
+      </div>
+      <div class="blue-bar-container">
+        <div class="blue-bar" id="blue-bar"></div>
+      </div>
+      <div class="hud-readout" id="hud-val">0.00°</div>
     </div>
 
-    <!-- Application Logic Script -->
-    <script>
-        // State Management
-        let currentWheel = 'FL';
-        let rawPitch = 0, rawRoll = 0, rawYaw = 0;
-        let smoothPitch = 0, smoothRoll = 0, smoothYaw = 0;
-        let zeroPitch = 0, zeroRoll = 0, zeroYaw = 0;
-        let filterAlpha = 0.1; // Low pass filter factor
+    <div class="specs-overlay" id="specs-screen">
+      <h2>Vehicle Target Specs</h2>
+      <select id="vehicle-select">
+        <option value="">-- Select Vehicle --</option>
+        <optgroup label="Tesla">
+          <option value="tesla_s_17">2017 Tesla Model S (Air Susp)</option>
+          <option value="tesla_y_20">2020 Tesla Model Y</option>
+        </optgroup>
+        <optgroup label="Ford">
+          <option value="ford_f150_05">2005 Ford F-150 FX4 4x4</option>
+        </optgroup>
+        <optgroup label="Chevrolet">
+          <option value="corvette_c8">Corvette C8 Stingray</option>
+        </optgroup>
+      </select>
+      
+      <table class="results-table" id="specs-table">
+        <tr><th>Spec</th><th>Target</th><th>Tolerance</th></tr>
+        <tr><td>Fr Camber</td><td id="spec-fc">-</td><td id="tol-fc">-</td></tr>
+        <tr><td>Fr Toe</td><td id="spec-ft">-</td><td id="tol-ft">-</td></tr>
+        <tr><td>Rr Camber</td><td id="spec-rc">-</td><td id="tol-rc">-</td></tr>
+        <tr><td>Rr Toe</td><td id="spec-rt">-</td><td id="tol-rt">-</td></tr>
+      </table>
+      
+      <button class="close-specs" onclick="document.getElementById('specs-screen').style.display='none'">Close Specs</button>
+    </div>
+  </div>
 
-        // Preset Target Specifications
-        let targetSpecs = {
-            camber: -1.50,
-            camberTol: 0.30,
-            toe: 0.10,
-            toeTol: 0.05,
-            caster: 6.00,
-            casterTol: 0.50
-        };
+  <div class="bottom-panel">
+    <div class="instruction-text" id="instruction">Select a mode from the toolbar to begin.</div>
+    <button class="action-btn" id="btn-action" disabled>Waiting...</button>
+  </div>
 
-        const presets = {
-            sports: { camber: -1.50, camberTol: 0.3, toe: 0.10, toeTol: 0.05, caster: 6.5, casterTol: 0.5 },
-            sedan: { camber: -0.80, camberTol: 0.4, toe: 0.15, toeTol: 0.05, caster: 5.0, casterTol: 0.5 },
-            suv: { camber: -0.30, camberTol: 0.5, toe: 0.20, toeTol: 0.10, caster: 4.0, casterTol: 0.5 },
-            track: { camber: -2.80, camberTol: 0.2, toe: 0.00, toeTol: 0.02, caster: 7.5, casterTol: 0.3 }
-        };
+<script>
+let audioCtx;
+function playBeep(success = true) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(success ? 800 : 300, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
 
-        // Recorded Wheel Measurements
-        let measurements = {
-            FL: { camber: -1.20, toe: 0.10, caster: 6.1 },
-            FR: { camber: null, toe: null, caster: null },
-            RL: { camber: null, toe: null, caster: null },
-            RR: { camber: null, toe: null, caster: null }
-        };
+let orientation = { pitch: 0, roll: 0, yaw: 0 };
+let rawOrientation = { pitch: 0, roll: 0, yaw: 0 };
+const filterFactor = 0.85;
 
-        // Toe Sweep State
-        let toeStep = 1;
-        let toeValues = { step1: 0, step2: 0, step3: 0 };
+document.getElementById('btn-grant-sensors').addEventListener('click', async () => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AudioContext();
+  audioCtx.resume();
+  
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const permissionState = await DeviceOrientationEvent.requestPermission();
+      if (permissionState === 'granted') {
+        startSensors();
+      } else {
+        alert("Sensor permission denied. Must be allowed in Safari settings.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Requires HTTPS to request sensor access.");
+    }
+  } else {
+    startSensors();
+  }
+});
 
-        // Caster Sweep State
-        let casterSweeping = false;
-        let casterOutCamber = null;
-        let casterInCamber = null;
+function startSensors() {
+  document.getElementById('permission-screen').style.display = 'none';
+  document.getElementById('badge-sensor').textContent = "Sensors Active";
+  document.getElementById('badge-sensor').classList.add('active');
+  
+  window.addEventListener('deviceorientation', (e) => {
+    let rPitch = e.beta || 0;
+    let rRoll = e.gamma || 0;
+    let rYaw = e.alpha || 0;
+    if (rPitch > 80) rRoll = 0; 
+    rawOrientation = { pitch: rPitch, roll: rRoll, yaw: rYaw };
+    orientation.pitch = (orientation.pitch * filterFactor) + (rPitch * (1 - filterFactor));
+    orientation.roll = (orientation.roll * filterFactor) + (rRoll * (1 - filterFactor));
+    orientation.yaw = (orientation.yaw * filterFactor) + (rYaw * (1 - filterFactor));
+    updateHUD();
+  });
+}
 
-        // Audio Context for Sound Feedback
-        let audioCtx = null;
+let currentMode = 'IDLE';
+let workflowStep = 0;
+let camberOffset = 0;
+let isCalibrated = false;
 
-        // Initialize Lucide icons on load
-        window.onload = function() {
-            lucide.createIcons();
-            initThreeJS();
-            initSensors();
-            updateUI();
-        };
+let calibTemp = 0;
+let measurements = {
+  FL: { camber: null, toe: null, caster: null },
+  FR: { camber: null, toe: null, caster: null },
+  RL: { camber: null, toe: null, caster: null },
+  RR: { camber: null, toe: null, caster: null }
+};
 
-        // Motion & Orientation Sensor Setup
-        function initSensors() {
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', handleOrientation, true);
-            }
-        }
+const ui = {
+  inst: document.getElementById('instruction'),
+  btn: document.getElementById('btn-action'),
+  hud: document.getElementById('hud'),
+  diamond: document.getElementById('diamond'),
+  blueBar: document.getElementById('blue-bar'),
+  hudVal: document.getElementById('hud-val'),
+  wheels: document.querySelectorAll('.wheel')
+};
 
-        function requestMotionPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation, true);
-                            document.getElementById('perm-status').innerText = 'Sensors: Connected';
-                            document.getElementById('btn-permission').classList.replace('bg-garage-cyan/20', 'bg-garage-accent/20');
-                            document.getElementById('btn-permission').classList.replace('text-garage-cyan', 'text-garage-accent');
-                        } else {
-                            alert('Motion Sensor permission denied.');
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                document.getElementById('perm-status').innerText = 'Sensors: Active';
-            }
-            initAudio();
-        }
+document.querySelectorAll('.toolbar button').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    const mode = e.target.getAttribute('data-mode');
+    
+    if (mode === 'SPECS') {
+      document.getElementById('specs-screen').style.display = 'flex';
+      return;
+    }
+    
+    startMode(mode);
+  });
+});
 
-        function handleOrientation(e) {
-            // Beta = Pitch (X), Gamma = Roll (Y), Alpha = Yaw (Z)
-            rawPitch = e.beta || 0;
-            rawRoll = e.gamma || 0;
-            rawYaw = e.alpha || 0;
+function resetWheels() {
+  ui.wheels.forEach(w => {
+    w.classList.remove('flashing', 'measured');
+  });
+}
 
-            // Apply Low-Pass Smoothing Filter
-            smoothPitch += (rawPitch - smoothPitch) * filterAlpha;
-            smoothRoll += (rawRoll - smoothRoll) * filterAlpha;
-            smoothYaw += (rawYaw - smoothYaw) * filterAlpha;
+function highlightWheel(code, flashing = true) {
+  resetWheels();
+  const w = document.querySelector(`.wheel.${code.toLowerCase()}`);
+  if (w) {
+    if (flashing) w.classList.add('flashing');
+    else w.classList.add('measured');
+  }
+}
 
-            updateReadouts();
-        }
+function startMode(mode) {
+  currentMode = mode;
+  workflowStep = 0;
+  ui.hud.style.display = 'flex';
+  ui.btn.disabled = false;
+  
+  if (!isCalibrated && mode !== 'CALIBRATE') {
+    ui.inst.innerHTML = "⚠️ System Uncalibrated. Please run <b>Calibrate Offset</b> first.";
+    ui.btn.disabled = true;
+    ui.btn.textContent = "Requires Calibration";
+    ui.hud.style.display = 'none';
+    return;
+  }
 
-        function updateFilter(val) {
-            filterAlpha = parseFloat(val);
-        }
+  if (mode === 'CALIBRATE') {
+    resetWheels();
+    ui.inst.innerHTML = "<b>Camber Offset Calibration:</b><br>Place device against flat reference surface. Level the Blue Bar.";
+    ui.btn.textContent = "Save Calibration 1";
+    ui.btn.onclick = () => processCalibration(1);
+  } 
+  else if (mode === 'QUICK') {
+    ui.inst.innerHTML = "<b>Quick Align (6-Point):</b><br>Start at the <b>Rear Left</b> wheel. Place device on outer rim and center the diamond.";
+    ui.btn.textContent = "Capture RL";
+    highlightWheel('RL');
+    ui.btn.onclick = () => processQuickAlign('RL');
+  }
+  else if (mode === 'CAMBER') {
+    resetWheels();
+    ui.inst.innerHTML = "<b>Camber Mode:</b><br>Place device against any wheel rim. Level the Blue Bar.";
+    ui.btn.textContent = "Capture Camber";
+    ui.btn.onclick = () => {
+      playBeep();
+      const val = (orientation.roll - camberOffset).toFixed(2);
+      ui.inst.innerHTML = `Captured: <b>${val}°</b> Camber.<br>Move to another wheel.`;
+    };
+  }
+  else if (mode === 'CASTER') {
+    resetWheels();
+    highlightWheel('FL');
+    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Place on Front Left wheel. Ensure steering is perfectly straight.";
+    ui.btn.textContent = "Capture Straight";
+    ui.btn.onclick = () => processCasterStep(1);
+  }
+}
 
-        function zeroSensors() {
-            zeroPitch = smoothPitch;
-            zeroRoll = smoothRoll;
-            zeroYaw = smoothYaw;
-            playBeep(880, 0.1);
-        }
+function processCalibration(step) {
+  playBeep();
+  if (step === 1) {
+    calibTemp = orientation.roll;
+    ui.inst.innerHTML = "<b>Calibration Step 2:</b><br>Rotate device 180 degrees (upside down) on the exact same surface.";
+    ui.btn.textContent = "Save Calibration 2";
+    ui.btn.onclick = () => processCalibration(2);
+  } else {
+    const calib2 = orientation.roll;
+    camberOffset = (calibTemp + calib2) / 2; 
+    isCalibrated = true;
+    
+    document.getElementById('badge-cal').textContent = "Calibrated";
+    document.getElementById('badge-cal').classList.add('active');
+    
+    ui.inst.innerHTML = `<b>Calibration Complete.</b><br>Offset: ${camberOffset.toFixed(2)}°. Ready to measure.`;
+    ui.btn.textContent = "Done";
+    ui.btn.disabled = true;
+    ui.hud.style.display = 'none';
+  }
+}
 
-        function resetZero() {
-            zeroPitch = 0;
-            zeroRoll = 0;
-            zeroYaw = 0;
-        }
+function processQuickAlign(wheel) {
+  playBeep();
+  const val = (orientation.roll - camberOffset).toFixed(2);
+  measurements[wheel].camber = val;
+  document.querySelector(`.wheel.${wheel.toLowerCase()}`).classList.add('measured');
+  
+  const sequence = {'RL': 'RR', 'RR': 'FL', 'FL': 'FR', 'FR': null};
+  const next = sequence[wheel];
+  
+  if (next) {
+    highlightWheel(next);
+    ui.inst.innerHTML = `<b>Quick Align:</b><br>Move to the <b>${next}</b> wheel. Center diamond.`;
+    ui.btn.textContent = `Capture ${next}`;
+    ui.btn.onclick = () => processQuickAlign(next);
+  } else {
+    resetWheels();
+    ui.hud.style.display = 'none';
+    ui.inst.innerHTML = `<b>Quick Align Complete.</b><br>All wheels measured. Review data below.`;
+    ui.btn.textContent = "View Report";
+    ui.btn.disabled = true;
+  }
+}
 
-        function updateReadouts() {
-            const pitch = smoothPitch - zeroPitch;
-            const roll = smoothRoll - zeroRoll;
-            const yaw = smoothYaw - zeroYaw;
+let casterData = { straightCamber: 0, outCamber: 0, inCamber: 0 };
+function processCasterStep(step) {
+  playBeep();
+  if (step === 1) {
+    casterData.straightCamber = orientation.roll - camberOffset;
+    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Turn steering wheel <b>20° OUT</b> (away from car).";
+    ui.btn.textContent = "Capture Steer Out";
+    ui.btn.onclick = () => processCasterStep(2);
+  } else if (step === 2) {
+    casterData.outCamber = orientation.roll - camberOffset;
+    ui.inst.innerHTML = "<b>Caster Sweep:</b><br>Turn steering wheel <b>20° IN</b> (towards car).";
+    ui.btn.textContent = "Capture Steer In";
+    ui.btn.onclick = () => processCasterStep(3);
+  } else {
+    casterData.inCamber = orientation.roll - camberOffset;
+    const caster = ((casterData.outCamber - casterData.inCamber) * 1.5).toFixed(2);
+    ui.hud.style.display = 'none';
+    ui.inst.innerHTML = `<b>Sweep Complete.</b><br>Calculated Caster: <b>${caster}°</b>`;
+    ui.btn.textContent = "Done";
+    ui.btn.disabled = true;
+  }
+}
 
-            document.getElementById('val-pitch').innerText = (pitch >= 0 ? '+' : '') + pitch.toFixed(2) + '°';
-            document.getElementById('val-roll').innerText = (roll >= 0 ? '+' : '') + roll.toFixed(2) + '°';
-            document.getElementById('val-yaw').innerText = yaw.toFixed(2) + '°';
+function updateHUD() {
+  if (ui.hud.style.display === 'none') return;
 
-            // Update Digital Bullseye Level Bubble
-            const bubble = document.getElementById('bullseye-bubble');
-            const maxOffset = 40; // pixels
-            const bubbleX = Math.max(-maxOffset, Math.min(maxOffset, roll * 4));
-            const bubbleY = Math.max(-maxOffset, Math.min(maxOffset, pitch * 4));
-            bubble.style.transform = `translate(calc(-50% + ${bubbleX}px), calc(-50% + ${bubbleY}px))`;
+  const displayRoll = orientation.roll - (isCalibrated ? camberOffset : 0);
+  ui.blueBar.style.transform = `rotate(${displayRoll}deg)`;
+  ui.hudVal.textContent = displayRoll.toFixed(2) + "°";
 
-            // Active Camber Readout
-            const activeCamber = pitch; 
-            const camberElem = document.getElementById('camber-readout');
-            camberElem.innerText = (activeCamber >= 0 ? '+' : '') + activeCamber.toFixed(2) + '°';
+  let pDelta = orientation.pitch - 90; 
+  let rDelta = orientation.roll;
 
-            // Calculate Linear Offset based on Rim Size
-            const rimInches = parseFloat(document.getElementById('rim-size').value);
-            const linearInches = rimInches * Math.sin(activeCamber * (Math.PI / 180));
-            const linearMM = linearInches * 25.4;
-            document.getElementById('camber-linear').innerText = `Linear Offset: ${linearInches >= 0 ? '+' : ''}${linearInches.toFixed(2)} in / ${linearMM.toFixed(1)} mm`;
+  let x = Math.max(-90, Math.min(90, rDelta * 4)); 
+  let y = Math.max(-90, Math.min(90, pDelta * 4));
 
-            // Camber Visual Bar Positioning
-            const minC = targetSpecs.camber - targetSpecs.camberTol * 2;
-            const maxC = targetSpecs.camber + targetSpecs.camberTol * 2;
-            const percent = Math.max(0, Math.min(100, ((activeCamber - minC) / (maxC - minC)) * 100));
-            document.getElementById('camber-marker').style.left = `${percent}%`;
+  ui.diamond.style.left = `calc(50% + ${x}px)`;
+  ui.diamond.style.top = `calc(50% + ${y}px)`;
 
-            // Camber Status Badge
-            const statusBadge = document.getElementById('camber-status-badge');
-            if (Math.abs(activeCamber - targetSpecs.camber) <= targetSpecs.camberTol) {
-                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-garage-accent/20 text-garage-accent border border-garage-accent";
-                statusBadge.innerText = "IN SPEC";
-            } else {
-                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-garage-danger/20 text-garage-danger border border-garage-danger";
-                statusBadge.innerText = "OUT OF SPEC";
-            }
+  if (Math.abs(x) < 20 && Math.abs(y) < 20) {
+    ui.diamond.style.background = 'var(--accent-green)';
+  } else {
+    ui.diamond.style.background = 'var(--accent-red)';
+  }
+}
 
-            // Update Toe Sweep Live View
-            document.getElementById('toe-live-yaw').innerText = yaw.toFixed(2) + '°';
-        }
+const vehicleDB = {
+  "tesla_s_17": { fc: "-0.7", ft: "0.05", rc: "-1.5", rt: "0.15" },
+  "tesla_y_20": { fc: "-0.5", ft: "0.00", rc: "-1.2", rt: "0.10" },
+  "ford_f150_05": { fc: "-0.2", ft: "0.10", rc: "0.0", rt: "0.00" },
+  "corvette_c8": { fc: "-1.0", ft: "0.00", rc: "-1.5", rt: "0.10" }
+};
 
-        // Active Wheel Selection
-        function setActiveWheel(wheel) {
-            currentWheel = wheel;
-            document.querySelectorAll('.wheel-btn').forEach(btn => {
-                btn.className = "wheel-btn bg-garage-900 border border-gray-700 text-gray-400 p-2 rounded-lg text-xs font-bold flex items-center justify-between";
-            });
-            const activeBtn = document.getElementById(`btn-wheel-${wheel}`);
-            activeBtn.className = "wheel-btn bg-garage-cyan/20 border-2 border-garage-cyan text-white p-2 rounded-lg text-xs font-bold flex items-center justify-between";
-        }
-
-        // Mode Navigation Tab Switcher
-        function switchMode(mode) {
-            document.querySelectorAll('.mode-tab').forEach(tab => {
-                tab.className = "mode-tab text-gray-400 hover:text-white font-medium py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1";
-            });
-            document.querySelectorAll('.mode-panel').forEach(panel => panel.classList.add('hidden'));
-
-            const activeTab = document.getElementById(`tab-${mode}`);
-            activeTab.className = "mode-tab bg-garage-cyan text-slate-950 font-bold py-2 rounded-lg text-xs text-center transition flex items-center justify-center gap-1 shadow-md";
-
-            document.getElementById(`panel-${mode}`).classList.remove('hidden');
-
-            if (mode === 'visual' && window.renderer) {
-                window.renderer.setSize(document.getElementById('canvas-container').clientWidth, document.getElementById('canvas-container').clientHeight);
-            }
-        }
-
-        // Guided Toe Alignment Wizard
-        function advanceToeWizard() {
-            const currentYaw = smoothYaw - zeroYaw;
-            playBeep(600, 0.15);
-
-            if (toeStep === 1) {
-                toeValues.step1 = currentYaw;
-                toeStep = 2;
-                document.getElementById('toe-step-badge').innerText = "STEP 2 / 3";
-                document.getElementById('toe-step1-card').classList.add('opacity-50');
-                document.getElementById('toe-step2-card').classList.remove('opacity-50');
-                document.getElementById('toe-step2-card').classList.add('border-2', 'border-garage-cyan');
-                document.getElementById('toe-instruction').innerText = "Return wheel to center facing straight.";
-                document.getElementById('toe-wizard-btn').innerText = "Capture Step 2 (Center)";
-            } else if (toeStep === 2) {
-                toeValues.step2 = currentYaw;
-                toeStep = 3;
-                document.getElementById('toe-step-badge').innerText = "STEP 3 / 3";
-                document.getElementById('toe-step2-card').classList.add('opacity-50');
-                document.getElementById('toe-step3-card').classList.remove('opacity-50');
-                document.getElementById('toe-step3-card').classList.add('border-2', 'border-garage-cyan');
-                document.getElementById('toe-instruction').innerText = "Turn wheel 15° IN and capture final angle.";
-                document.getElementById('toe-wizard-btn').innerText = "Calculate Total Toe";
-            } else if (toeStep === 3) {
-                toeValues.step3 = currentYaw;
-                const calculatedToe = ((toeValues.step1 - toeValues.step3) / 2).toFixed(2);
-                measurements[currentWheel].toe = parseFloat(calculatedToe);
-                alert(`Toe Measurement Calculated: ${calculatedToe}°`);
-                resetToeWizard();
-                updateSummary();
-            }
-        }
-
-        function resetToeWizard() {
-            toeStep = 1;
-            document.getElementById('toe-step-badge').innerText = "STEP 1 / 3";
-            document.querySelectorAll('[id^="toe-step"]').forEach(card => card.classList.add('opacity-50'));
-            document.getElementById('toe-step1-card').classList.remove('opacity-50');
-            document.getElementById('toe-instruction').innerText = "Align phone with wheel rim facing straight, then press Capture Start Position.";
-            document.getElementById('toe-wizard-btn').innerText = "Capture Step 1 (15° Out)";
-        }
-
-        // Caster Angle Sweep Process
-        function startCasterSweep() {
-            playBeep(700, 0.2);
-            document.getElementById('caster-step-badge').innerText = "STEER 20° OUT";
-            document.getElementById('caster-btn').innerText = "Capture Steer Out Camber";
-            document.getElementById('caster-btn').onclick = captureCasterOut;
-        }
-
-        function captureCasterOut() {
-            casterOutCamber = smoothPitch - zeroPitch;
-            document.getElementById('caster-out-val').innerText = casterOutCamber.toFixed(2) + '°';
-            document.getElementById('caster-step-badge').innerText = "STEER 20° IN";
-            document.getElementById('caster-btn').innerText = "Capture Steer In Camber";
-            document.getElementById('caster-btn').onclick = captureCasterIn;
-        }
-
-        function captureCasterIn() {
-            casterInCamber = smoothPitch - zeroPitch;
-            document.getElementById('caster-in-val').innerText = casterInCamber.toFixed(2) + '°';
-            
-            // Standard Caster Formula: (CamberIn - CamberOut) / (2 * sin(sweep_angle))
-            const sweepAngleRad = 20 * (Math.PI / 180);
-            const calculatedCaster = Math.abs((casterInCamber - casterOutCamber) / (2 * Math.sin(sweepAngleRad)));
-
-            document.getElementById('caster-result').innerText = '+' + calculatedCaster.toFixed(2) + '°';
-            measurements[currentWheel].caster = parseFloat(calculatedCaster.toFixed(2));
-            
-            document.getElementById('caster-step-badge').innerText = "COMPLETE";
-            document.getElementById('caster-btn').innerText = "Restart Caster Sweep";
-            document.getElementById('caster-btn').onclick = startCasterSweep;
-            updateSummary();
-        }
-
-        // Save Current Camber
-        function saveMeasurement(type) {
-            if (type === 'camber') {
-                const val = parseFloat((smoothPitch - zeroPitch).toFixed(2));
-                measurements[currentWheel].camber = val;
-                playBeep(1000, 0.2);
-                updateSummary();
-                update3DWheel(currentWheel, val);
-            }
-        }
-
-        function updateSummary() {
-            const summary = `FL: ${formatVal(measurements.FL.camber)} | FR: ${formatVal(measurements.FR.camber)} | RL: ${formatVal(measurements.RL.camber)} | RR: ${formatVal(measurements.RR.camber)}`;
-            document.getElementById('summary-text').innerText = summary;
-        }
-
-        function formatVal(val) {
-            return val !== null ? `${val >= 0 ? '+' : ''}${val}°` : '--';
-        }
-
-        // Spec Database Preset Loader
-        function loadPresetSpec(key) {
-            if (presets[key]) {
-                targetSpecs = { ...presets[key] };
-                updateUI();
-            }
-        }
-
-        function saveCustomSpecs() {
-            targetSpecs.camber = parseFloat(document.getElementById('edit-camber-target').value);
-            targetSpecs.camberTol = parseFloat(document.getElementById('edit-camber-tol').value);
-            targetSpecs.toe = parseFloat(document.getElementById('edit-toe-target').value);
-            targetSpecs.toeTol = parseFloat(document.getElementById('edit-toe-tol').value);
-            targetSpecs.caster = parseFloat(document.getElementById('edit-caster-target').value);
-            targetSpecs.casterTol = parseFloat(document.getElementById('edit-caster-tol').value);
-            toggleModal('specs-modal');
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('camber-target-label').innerText = `Target: ${targetSpecs.camber.toFixed(2)}°`;
-            document.getElementById('camber-min-label').innerText = `Min: ${(targetSpecs.camber - targetSpecs.camberTol).toFixed(2)}°`;
-            document.getElementById('camber-max-label').innerText = `Max: ${(targetSpecs.camber + targetSpecs.camberTol).toFixed(2)}°`;
-        }
-
-        // Modal Handler
-        function toggleModal(id) {
-            document.getElementById(id).classList.toggle('hidden');
-        }
-
-        // Audio Beep Generator (Web Audio API)
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
-
-        function playBeep(freq, duration) {
-            if (!document.getElementById('audio-toggle').checked) return;
-            initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.frequency.value = freq;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        // Export Report JSON
-        function exportReport() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(measurements, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `aeroalign_report_${Date.now()}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        // Three.js 3D Interactive Visualizer
-        let scene, camera, renderer, carMesh, wheelMeshes = {};
-
-        function initThreeJS() {
-            const container = document.getElementById('canvas-container');
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0b0f17);
-
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(4, 3, 5);
-            camera.lookAt(0, 0, 0);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0x00e5ff, 0.8);
-            dirLight.position.set(5, 10, 7);
-            scene.add(dirLight);
-
-            // Chassis Body representation
-            const chassisGeo = new THREE.BoxGeometry(2, 0.6, 3.8);
-            const chassisMat = new THREE.MeshStandardMaterial({ color: 0x1f293d, metalness: 0.8, roughness: 0.2 });
-            carMesh = new THREE.Mesh(chassisGeo, chassisMat);
-            scene.add(carMesh);
-
-            // Wheel Positions
-            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.25, 24);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x00e676, wireframe: true });
-
-            const positions = {
-                FL: [-1.1, -0.1, 1.2],
-                FR: [1.1, -0.1, 1.2],
-                RL: [-1.1, -0.1, -1.2],
-                RR: [1.1, -0.1, -1.2]
-            };
-
-            for (let w in positions) {
-                const mesh = new THREE.Mesh(wheelGeo, wheelMat);
-                mesh.position.set(...positions[w]);
-                mesh.rotation.z = Math.PI / 2;
-                scene.add(mesh);
-                wheelMeshes[w] = mesh;
-            }
-
-            // Animate 3D Loop
-            function animate() {
-                requestAnimationFrame(animate);
-                carMesh.rotation.y += 0.003;
-                for (let w in wheelMeshes) {
-                    wheelMeshes[w].rotation.y = carMesh.rotation.y;
-                }
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        function update3DWheel(wheelKey, camberVal) {
-            if (wheelMeshes[wheelKey]) {
-                // Adjust z-tilt proportional to camber
-                wheelMeshes[wheelKey].rotation.z = (Math.PI / 2) + (camberVal * (Math.PI / 180));
-            }
-        }
-    </script>
+document.getElementById('vehicle-select').addEventListener('change', (e) => {
+  const specs = vehicleDB[e.target.value];
+  if (specs) {
+    document.getElementById('spec-fc').textContent = specs.fc + "°";
+    document.getElementById('spec-ft').textContent = specs.ft + "°";
+    document.getElementById('spec-rc').textContent = specs.rc + "°";
+    document.getElementById('spec-rt').textContent = specs.rt + "°";
+    
+    document.getElementById('tol-fc').textContent = "± 0.5°";
+    document.getElementById('tol-ft').textContent = "± 0.1°";
+    document.getElementById('tol-rc').textContent = "± 0.5°";
+    document.getElementById('tol-rt').textContent = "± 0.1°";
+  } else {
+    ['fc','ft','rc','rt'].forEach(k => {
+      document.getElementById(`spec-${k}`).textContent = "-";
+      document.getElementById(`tol-${k}`).textContent = "-";
+    });
+  }
+});
+</script>
 </body>
 </html>
