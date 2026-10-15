@@ -1,0 +1,2 @@
+{"_README":"Key entries as YEAR|MAKE|MODEL in uppercase, or MAKE|MODEL to cover all years. Each spec is [target, plus-or-minus tolerance] in decimal degrees. toeF and toeR are TOTAL toe for the axle. Take values from the OEM service manual or your alignment data subscription.",
+"_EXAMPLE|MAKE|MODEL":{"camF":[0,0.5],"casF":[0,1],"toeF":[0,0.1],"toeR":[0,0.1],"thr":[0,0.1]}}
