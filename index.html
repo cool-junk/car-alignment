@@ -105,7 +105,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v5';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v6';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
