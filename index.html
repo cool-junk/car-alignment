@@ -34,13 +34,14 @@ table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;bor
 @media (orientation:portrait){#rot{display:flex}}
 select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10px;border:1px solid #33414f;background:var(--card);color:var(--fg);width:100%;-webkit-user-select:text;user-select:text}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sc{overflow-y:auto;-webkit-overflow-scrolling:touch}.sc>*{flex-shrink:0}.stk{position:sticky;bottom:0;background:var(--bg);padding:8px 0}.ok2{color:var(--ok)}.no2{color:var(--bad)}#rep{display:none}
 @media print{html,body{overflow:visible!important;height:auto!important;background:#fff!important}body>*:not(#rep){display:none!important}#rep{display:block!important;color:#000;font:14px -apple-system,system-ui,sans-serif}#rep td{border-bottom:1px solid #bbb;padding:5px 4px;color:#000;font-size:13px}#rep th{text-align:right;border-bottom:2px solid #000;padding:4px;font-size:13px}#rep th:first-child{text-align:left}#rep .ok2{color:#0a7a2f}#rep .no2{color:#c00}@page{margin:12mm}}
+.ver{font-size:12px;font-weight:500;color:var(--mut);align-self:flex-end}.ver.a{position:absolute;right:22px;bottom:8px}
 </style></head><body>
 <div id="rot"><div>Rotate the phone to landscape<br><p>Turn off Portrait Orientation Lock in Control Center</p></div></div>
 
-<section id="welcome" class="scr on c">
+<section id="welcome" class="scr on c" style="position:relative">
  <h1 style="font-size:46px">Wheel Align</h1>
  <p>Measure toe, camber, caster and thrust with your phone's motion sensors.</p>
- <button class="p" id="grant">Grant Sensor Access</button><p id="err" style="color:var(--bad)"></p>
+ <button class="p" id="grant">Grant Sensor Access</button><p id="err" style="color:var(--bad)"></p><div class="ver a"></div>
 </section>
 
 <section id="cal" class="scr c">
@@ -61,6 +62,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
   <button id="t-veh">Vehicle &amp; specs<small id="vLbl"></small></button>
   <button id="t-rep">Report<small>Print for the customer</small></button>
  </div>
+ <div class="ver"></div>
 </section>
 
 <section id="meas" class="scr">
@@ -103,7 +105,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v5';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -121,6 +123,7 @@ const tt=()=>performance.now()/1e3-t0;
 const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>Math.asin(Math.max(-1,Math.min(1,V[2])))/D-Math.sign(V[0])*S.cx;
 const scr=(x,y)=>window.orientation==-90?[y,-x]:[-y,x];
 const fmt=v=>{if(S.dm){let a=Math.abs(v),d=Math.floor(a),m=Math.round((a-d)*60);if(m==60){d++;m=0}return(v<0&&(d||m)?'-':'')+d+'° '+String(m).padStart(2,'0')+"'"}return(Math.abs(v)<.005?0:v).toFixed(2)+'°'};
+document.querySelectorAll('.ver').forEach(e=>e.textContent='Version '+VER);
 const show=id=>{document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id==id))};
 
 /* permissions + start */
