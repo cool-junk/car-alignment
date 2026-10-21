@@ -92,7 +92,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
 </section>
 <section id="vadd" class="scr sc">
  <div class="row"><h1 id="vaT">Add vehicle</h1><span class="sp"></span><button id="vaX">Cancel</button><button class="p" id="vaS">Save vehicle</button></div>
- <div class="g3"><input id="va_y" type="number" inputmode="numeric" placeholder="Year (blank = all years)"><input id="va_mk" placeholder="Make, e.g. Honda"><input id="va_md" placeholder="Model, e.g. Civic"></div>
+ <div class="g3"><input id="va_y" placeholder="Year or range, e.g. 2020-2025"><input id="va_mk" placeholder="Make, e.g. Honda"><input id="va_md" placeholder="Model, e.g. Civic"></div>
  <p id="vaMsg" class="no2"></p>
  <p>Enter the manufacturer spec as a target and a ± tolerance, in decimal degrees (0.17 is 0° 10'). Use negative numbers for negative camber. Toe is the whole-axle total. Leave a row blank to skip it.</p>
  <table id="vsp"></table>
@@ -114,7 +114,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v9';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v10';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -234,32 +234,34 @@ const specs=()=>{const k=vk();return k?SP[k]||FSP[k]||{}:{}};
 const SK=[['camF','Front camber'],['casF','Front caster'],['toeF','Front total toe'],['toeR','Rear total toe'],['thr','Thrust angle']];
 q('#vsp').innerHTML=SK.map(([k,l])=>`<tr><td>${l}</td><td><input type="number" step="any" id="s_${k}_0" placeholder="target"></td><td><input type="number" step="any" id="s_${k}_1" placeholder="± tolerance"></td></tr>`).join('');
 /* vehicle list = only what is in specs.json plus vehicles added on this phone */
-const vlist=()=>[...new Set([...Object.keys(FSP),...Object.keys(SP)])].filter(k=>k[0]!='_'&&k.includes('|')).map(k=>{const p=k.split('|');return p.length>=3?{k,y:p[0],mk:p[1],md:p.slice(2).join('|')}:{k,y:'ALL',mk:p[0],md:p[1]}});
+const vlist=()=>[...new Set([...Object.keys(FSP),...Object.keys(SP)])].filter(k=>k[0]!='_'&&k.includes('|')).map(k=>{const p=k.split('|');if(p.length<3)return{k,ys:'',y0:0,y1:9999,mk:p[0],md:p[1]};const m=p[0].match(/^(\d{4})(?:-(\d{4}))?$/);return m?{k,ys:p[0],y0:+m[1],y1:+(m[2]||m[1]),mk:p[1],md:p.slice(2).join('|')}:null}).filter(Boolean);
 const yl=y=>y=='ALL'?'All years':y,ea=s=>esc(s).replace(/"/g,'&quot;');
 let VS={};
 const opt=(id,l,cur,ph)=>{const e=q(id);e.innerHTML=`<option value="">${ph}</option>`+l.map(([v,t])=>`<option value="${ea(v)}">${esc(t)}</option>`).join('');e.value=l.some(x=>x[0]==cur)?cur:'';e.disabled=!l.length};
-function fillV(){const L=vlist(),ys=[...new Set(L.map(x=>x.y))].sort((a,b)=>a=='ALL'?1:b=='ALL'?-1:b-a);
+function fillV(){const L=vlist(),ys=[...new Set(L.flatMap(x=>x.y0?Array.from({length:Math.min(x.y1,x.y0+60)-x.y0+1},(_,i)=>String(x.y0+i)):[]))].sort((a,b)=>b-a);
+ if(L.some(x=>!x.y0))ys.push('ALL');
  opt('#vy',ys.map(y=>[y,yl(y)]),VS.y,'Year');
- opt('#vm',[...new Set(L.filter(x=>x.y==VS.y).map(x=>x.mk))].sort().map(m=>[m,m]),VS.mk,'Make');
- opt('#vd',L.filter(x=>x.y==VS.y&&x.mk==VS.mk).sort((a,b)=>a.md<b.md?-1:1).map(x=>[x.k,x.md]),vk(),'Model');
+ const F2=L.filter(x=>VS.y=='ALL'?!x.y0:!x.y0||(+VS.y>=x.y0&&+VS.y<=x.y1));
+ opt('#vm',[...new Set(F2.map(x=>x.mk))].sort().map(m=>[m,m]),VS.mk,'Make');
+ opt('#vd',F2.filter(x=>x.mk==VS.mk).sort((a,b)=>a.md<b.md?-1:1).map(x=>[x.k,x.md+(x.ys.includes('-')?' ('+x.ys+')':'')]),vk(),'Model');
  const k=vk(),s=specs();
  q('#vcard').innerHTML=k?(SK.filter(([c])=>s[c]).map(([c,l])=>`<tr><td>${l}</td><td>${fmt(s[c][0])} ± ${fmt(s[c][1])}</td></tr>`).join('')||'<tr><td>No specs entered.</td></tr>'):'<tr><td><small>Pick a vehicle above, or add a new one.</small></td></tr>';
  q('#vEdit').style.display=k?'':'none';q('#vDel').style.display=k&&SP[k]?'':'none';
  if(!L.length)q('#vMsg').textContent='No vehicles yet. Tap Add vehicle to enter your first one.'}
-async function vOpen(msg){show('veh');q('#vMsg').textContent=msg||'';await FP;const c=vlist().find(x=>x.k==vk());VS=c?{y:c.y,mk:c.mk}:{};fillV()}
+async function vOpen(msg){show('veh');q('#vMsg').textContent=msg||'';await FP;const c=vlist().find(x=>x.k==vk());VS=c?{y:RS.v.y&&c.y0&&+RS.v.y>=c.y0&&+RS.v.y<=c.y1?RS.v.y:c.y0?String(c.y0):'ALL',mk:c.mk}:{};fillV()}
 q('#vy').onchange=e=>{VS={y:e.target.value};RS.v={};saveR();upU();fillV()};
 q('#vm').onchange=e=>{VS.mk=e.target.value;RS.v={};saveR();upU();fillV()};
-q('#vd').onchange=e=>{const x=vlist().find(i=>i.k==e.target.value);RS.v=x?{key:x.k,y:x.y=='ALL'?'':x.y,mk:x.mk,md:x.md}:{};saveR();upU();fillV()};
+q('#vd').onchange=e=>{const x=vlist().find(i=>i.k==e.target.value);RS.v=x?{key:x.k,y:VS.y=='ALL'?'':VS.y,mk:x.mk,md:x.md}:{};saveR();upU();fillV()};
 function vForm(k){const x=k&&vlist().find(i=>i.k==k),s=k?specs():{};q('#vaT').textContent=k?'Edit specs':'Add vehicle';q('#vaMsg').textContent='';
- q('#va_y').value=x&&x.y!='ALL'?x.y:'';q('#va_mk').value=x?x.mk:'';q('#va_md').value=x?x.md:'';['#va_y','#va_mk','#va_md'].forEach(i=>q(i).readOnly=!!k);
+ q('#va_y').value=x?x.ys:'';q('#va_mk').value=x?x.mk:'';q('#va_md').value=x?x.md:'';['#va_y','#va_mk','#va_md'].forEach(i=>q(i).readOnly=!!k);
  SK.forEach(([c])=>[0,1].forEach(j=>{q(`#s_${c}_${j}`).value=s[c]&&s[c][j]!=null?s[c][j]:''}));show('vadd')}
 q('#vAdd').onclick=()=>vForm('');q('#vEdit').onclick=()=>vForm(vk());q('#vaX').onclick=()=>vOpen();
 q('#vaS').onclick=()=>{const y=q('#va_y').value.trim(),mk=q('#va_mk').value.trim(),md=q('#va_md').value.trim(),m=q('#vaMsg'),o={};
- if(y&&!/^(19|20)\d\d$/.test(y)){m.textContent='Year must be 4 digits, or leave it blank to cover all years.';return}
+ const rm=y.match(/^((?:19|20)\d\d)(?:\s*[-–]\s*((?:19|20)\d\d))?$/);if(y&&(!rm||(rm[2]&&+rm[2]<+rm[1]))){m.textContent='Enter a year like 2023, a range like 2020-2025, or leave it blank for all years.';return}const yn=!y?'':rm[2]&&rm[2]!=rm[1]?rm[1]+'-'+rm[2]:rm[1];
  if(!mk||!md){m.textContent='Make and model are required.';return}
  for(const[c,l]of SK){const t=q(`#s_${c}_0`).value,tl=q(`#s_${c}_1`).value;if((t===''||tl==='')&&(t!==''||tl!=='')){m.textContent=l+': enter both a target and a tolerance, or clear both.';return}if(t!=='')o[c]=[+t,Math.abs(+tl)]}
  if(!Object.keys(o).length){m.textContent='Enter at least one spec.';return}
- const k=(y?[y,mk,md]:[mk,md]).join('|').toUpperCase();SP[k]=o;RS.v={key:k,y:y,mk:mk.toUpperCase(),md:md.toUpperCase()};saveR();upU();vOpen('Saved. Use Copy list to keep it permanently.')};
+ const k=(yn?[yn,mk,md]:[mk,md]).join('|').toUpperCase();SP[k]=o;RS.v={key:k,y:yn.split('-')[0],mk:mk.toUpperCase(),md:md.toUpperCase()};saveR();upU();vOpen('Saved. Use Copy list to keep it permanently.')};
 q('#vDel').onclick=()=>{const k=vk();if(k&&confirm('Delete this vehicle and its specs from this phone?')){delete SP[k];if(!vlist().some(x=>x.k==k))RS.v={};saveR();upU();vOpen('Deleted.')}};
 q('#vCopy').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify({...FSP,...SP},null,1));q('#vMsg').textContent='Copied the full list. Replace specs.json in your repo with it so every device gets these vehicles.'}catch(e){q('#vMsg').textContent='Copy failed.'}};
 q('#vOk').onclick=()=>{upU();show('dash')};
