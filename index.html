@@ -84,9 +84,17 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
 </section>
 
 <section id="veh" class="scr sc">
- <div class="row"><h1>Vehicle &amp; specs</h1><span class="sp"></span><button id="vCopy">Copy specs JSON</button><button class="p" id="vOk">Save</button></div>
+ <div class="row"><h1>Vehicle &amp; specs</h1><span class="sp"></span><button id="vAdd">+ Add vehicle</button><button class="p" id="vOk">Done</button></div>
  <div class="g3"><select id="vy"></select><select id="vm"></select><select id="vd"></select></div>
- <p id="vMsg"></p><p>Specs in decimal degrees (for example 0.17 is 0° 10'). Total toe is entered as the whole-axle value.</p>
+ <table id="vcard"></table>
+ <div class="row"><button id="vEdit">Edit specs</button><button id="vDel">Delete</button><span class="sp"></span><button id="vCopy">Copy list</button></div>
+ <p id="vMsg"></p>
+</section>
+<section id="vadd" class="scr sc">
+ <div class="row"><h1 id="vaT">Add vehicle</h1><span class="sp"></span><button id="vaX">Cancel</button><button class="p" id="vaS">Save vehicle</button></div>
+ <div class="g3"><input id="va_y" type="number" inputmode="numeric" placeholder="Year (blank = all years)"><input id="va_mk" placeholder="Make, e.g. Honda"><input id="va_md" placeholder="Model, e.g. Civic"></div>
+ <p id="vaMsg" class="no2"></p>
+ <p>Enter the manufacturer spec as a target and a ± tolerance, in decimal degrees (0.17 is 0° 10'). Use negative numbers for negative camber. Toe is the whole-axle total. Leave a row blank to skip it.</p>
  <table id="vsp"></table>
 </section>
 <section id="repS" class="scr sc">
@@ -106,7 +114,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v8';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v9';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -200,7 +208,7 @@ q('#cap').onclick=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioCon
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
 for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
-const upU=()=>{q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';q('#vLbl').textContent=RS.v.y?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Pick year, make, model';q('#stg').textContent='Stage: '+RS.st};
+const upU=()=>{q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';q('#vLbl').textContent=RS.v.mk?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Choose a vehicle';q('#stg').textContent='Stage: '+RS.st};
 q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
 
 /* visuals */
@@ -219,26 +227,43 @@ const CI=[flat('SCREEN UP, FLAT SURFACE'),flat('SPIN 180° IN PLACE',1),flat('KE
 /* vehicle, specs, stage, report */
 let RS={v:{},st:'before',d:{before:{},after:{}},c:{}},SP={},FSP={},MK=null;
 try{RS={...RS,...JSON.parse(localStorage.alr)}}catch(e){}try{SP=JSON.parse(localStorage.als||'{}')}catch(e){}
-fetch('specs.json').then(r=>r.json()).then(j=>FSP=j).catch(()=>{});
+const FP=fetch('specs.json').then(r=>r.json()).then(j=>{FSP=j}).catch(()=>{});
 const saveR=()=>{try{localStorage.alr=JSON.stringify(RS);localStorage.als=JSON.stringify(SP)}catch(e){}};
-const vk=()=>RS.v.y&&RS.v.mk&&RS.v.md?[RS.v.y,RS.v.mk,RS.v.md].join('|').toUpperCase():'';
-const specs=()=>{const k=vk();return k?SP[k]||FSP[k]||FSP[k.split('|').slice(1).join('|')]||{}:{}};
+const vk=()=>RS.v.key||(RS.v.y&&RS.v.mk&&RS.v.md?[RS.v.y,RS.v.mk,RS.v.md].join('|').toUpperCase():'');
+const specs=()=>{const k=vk();return k?SP[k]||FSP[k]||{}:{}};
 const SK=[['camF','Front camber'],['casF','Front caster'],['toeF','Front total toe'],['toeR','Rear total toe'],['thr','Thrust angle']];
 q('#vsp').innerHTML=SK.map(([k,l])=>`<tr><td>${l}</td><td><input type="number" step="any" id="s_${k}_0" placeholder="target"></td><td><input type="number" step="any" id="s_${k}_1" placeholder="± tolerance"></td></tr>`).join('');
-const spIn=()=>{const s=specs();SK.forEach(([k])=>[0,1].forEach(j=>{q(`#s_${k}_${j}`).value=s[k]&&s[k][j]!=null?s[k][j]:''}))};
-const collect=()=>{const k=vk();if(!k)return;const o={};SK.forEach(([s])=>{const t=q(`#s_${s}_0`).value,l=q(`#s_${s}_1`).value;if(t!==''&&l!=='')o[s]=[+t,Math.abs(+l)]});if(Object.keys(o).length)SP[k]=o;else delete SP[k];saveR()};
-const yrs=[];for(let y=new Date().getFullYear()+1;y>=1981;y--)yrs.push(String(y));
-const api=async p=>(await(await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/'+p+'?format=json')).json()).Results;
-function fillSel(id,l,cur,ph){const e=q(id);e.innerHTML=`<option value="">${ph}</option>`+l.map(x=>`<option>${esc(x)}</option>`).join('')+'<option value="__o">Other (type it)</option>';if(cur&&!l.includes(cur))e.insertBefore(new Option(cur,cur),e.lastChild);e.value=cur||''}
-async function loadMk(){if(MK)return;try{MK=JSON.parse(localStorage.almk)}catch(e){}
- if(!MK){try{const r=await Promise.all(['car','truck','multipurpose'].map(t=>api('GetMakesForVehicleType/'+t)));MK=[...new Set(r.flat().map(x=>x.MakeName.trim()))].sort();try{localStorage.almk=JSON.stringify(MK)}catch(e){}}catch(e){MK=[];q('#vMsg').textContent='Could not reach the vehicle list. Choose "Other" to type entries.'}}}
-async function loadMd(){const v=RS.v;let l=[];if(v.y&&v.mk){try{l=[...new Set((await api(`GetModelsForMakeYear/make/${encodeURIComponent(v.mk)}/modelyear/${v.y}`)).map(x=>x.Model_Name))].sort()}catch(e){q('#vMsg').textContent='Could not reach the model list. Choose "Other" to type it.'}}fillSel('#vd',l,v.md,'Model')}
-async function vOpen(){show('veh');q('#vMsg').textContent='';await loadMk();fillSel('#vy',yrs,RS.v.y,'Year');fillSel('#vm',MK,RS.v.mk,'Make');await loadMd();spIn()}
-['#vy','#vm','#vd'].forEach(id=>q(id).onchange=async e=>{let v=e.target.value;if(v=='__o'){v=(prompt('Type it')||'').trim();if(!v){e.target.value='';return}e.target.insertBefore(new Option(v,v),e.target.lastChild);e.target.value=v}
- const R=RS.v;RS.v=id=='#vy'?{y:v,mk:R.mk}:id=='#vm'?{y:R.y,mk:v}:{...R,md:v};if(id!='#vd')await loadMd();spIn()});
-q('#vOk').onclick=()=>{collect();saveR();upU();show('dash')};
-q('#vCopy').onclick=()=>{collect();try{navigator.clipboard.writeText(JSON.stringify(SP,null,1));q('#vMsg').textContent='Copied. Merge it into specs.json in your repo to keep it permanently.'}catch(e){q('#vMsg').textContent='Copy failed.'}};
-q('#t-veh').onclick=vOpen;q('#stg').onclick=()=>{RS.st=RS.st=='before'?'after':'before';saveR();upU()};
+/* vehicle list = only what is in specs.json plus vehicles added on this phone */
+const vlist=()=>[...new Set([...Object.keys(FSP),...Object.keys(SP)])].filter(k=>k[0]!='_'&&k.includes('|')).map(k=>{const p=k.split('|');return p.length>=3?{k,y:p[0],mk:p[1],md:p.slice(2).join('|')}:{k,y:'ALL',mk:p[0],md:p[1]}});
+const yl=y=>y=='ALL'?'All years':y,ea=s=>esc(s).replace(/"/g,'&quot;');
+let VS={};
+const opt=(id,l,cur,ph)=>{const e=q(id);e.innerHTML=`<option value="">${ph}</option>`+l.map(([v,t])=>`<option value="${ea(v)}">${esc(t)}</option>`).join('');e.value=l.some(x=>x[0]==cur)?cur:'';e.disabled=!l.length};
+function fillV(){const L=vlist(),ys=[...new Set(L.map(x=>x.y))].sort((a,b)=>a=='ALL'?1:b=='ALL'?-1:b-a);
+ opt('#vy',ys.map(y=>[y,yl(y)]),VS.y,'Year');
+ opt('#vm',[...new Set(L.filter(x=>x.y==VS.y).map(x=>x.mk))].sort().map(m=>[m,m]),VS.mk,'Make');
+ opt('#vd',L.filter(x=>x.y==VS.y&&x.mk==VS.mk).sort((a,b)=>a.md<b.md?-1:1).map(x=>[x.k,x.md]),vk(),'Model');
+ const k=vk(),s=specs();
+ q('#vcard').innerHTML=k?(SK.filter(([c])=>s[c]).map(([c,l])=>`<tr><td>${l}</td><td>${fmt(s[c][0])} ± ${fmt(s[c][1])}</td></tr>`).join('')||'<tr><td>No specs entered.</td></tr>'):'<tr><td><small>Pick a vehicle above, or add a new one.</small></td></tr>';
+ q('#vEdit').style.display=k?'':'none';q('#vDel').style.display=k&&SP[k]?'':'none';
+ if(!L.length)q('#vMsg').textContent='No vehicles yet. Tap Add vehicle to enter your first one.'}
+async function vOpen(msg){show('veh');q('#vMsg').textContent=msg||'';await FP;const c=vlist().find(x=>x.k==vk());VS=c?{y:c.y,mk:c.mk}:{};fillV()}
+q('#vy').onchange=e=>{VS={y:e.target.value};RS.v={};saveR();upU();fillV()};
+q('#vm').onchange=e=>{VS.mk=e.target.value;RS.v={};saveR();upU();fillV()};
+q('#vd').onchange=e=>{const x=vlist().find(i=>i.k==e.target.value);RS.v=x?{key:x.k,y:x.y=='ALL'?'':x.y,mk:x.mk,md:x.md}:{};saveR();upU();fillV()};
+function vForm(k){const x=k&&vlist().find(i=>i.k==k),s=k?specs():{};q('#vaT').textContent=k?'Edit specs':'Add vehicle';q('#vaMsg').textContent='';
+ q('#va_y').value=x&&x.y!='ALL'?x.y:'';q('#va_mk').value=x?x.mk:'';q('#va_md').value=x?x.md:'';['#va_y','#va_mk','#va_md'].forEach(i=>q(i).readOnly=!!k);
+ SK.forEach(([c])=>[0,1].forEach(j=>{q(`#s_${c}_${j}`).value=s[c]&&s[c][j]!=null?s[c][j]:''}));show('vadd')}
+q('#vAdd').onclick=()=>vForm('');q('#vEdit').onclick=()=>vForm(vk());q('#vaX').onclick=()=>vOpen();
+q('#vaS').onclick=()=>{const y=q('#va_y').value.trim(),mk=q('#va_mk').value.trim(),md=q('#va_md').value.trim(),m=q('#vaMsg'),o={};
+ if(y&&!/^(19|20)\d\d$/.test(y)){m.textContent='Year must be 4 digits, or leave it blank to cover all years.';return}
+ if(!mk||!md){m.textContent='Make and model are required.';return}
+ for(const[c,l]of SK){const t=q(`#s_${c}_0`).value,tl=q(`#s_${c}_1`).value;if((t===''||tl==='')&&(t!==''||tl!=='')){m.textContent=l+': enter both a target and a tolerance, or clear both.';return}if(t!=='')o[c]=[+t,Math.abs(+tl)]}
+ if(!Object.keys(o).length){m.textContent='Enter at least one spec.';return}
+ const k=(y?[y,mk,md]:[mk,md]).join('|').toUpperCase();SP[k]=o;RS.v={key:k,y:y,mk:mk.toUpperCase(),md:md.toUpperCase()};saveR();upU();vOpen('Saved. Use Copy list to keep it permanently.')};
+q('#vDel').onclick=()=>{const k=vk();if(k&&confirm('Delete this vehicle and its specs from this phone?')){delete SP[k];if(!vlist().some(x=>x.k==k))RS.v={};saveR();upU();vOpen('Deleted.')}};
+q('#vCopy').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify({...FSP,...SP},null,1));q('#vMsg').textContent='Copied the full list. Replace specs.json in your repo with it so every device gets these vehicles.'}catch(e){q('#vMsg').textContent='Copy failed.'}};
+q('#vOk').onclick=()=>{upU();show('dash')};
+q('#t-veh').onclick=()=>vOpen();q('#stg').onclick=()=>{RS.st=RS.st=='before'?'after':'before';saveR();upU()};
 /* live comparison against spec while measuring */
 function lsp(s,yaw){const d=F.d;if(F.k=='camber')return{v:cam(),k:'camF',h:1};
  if(F.k=='toe'&&s.w=='R')return{v:w180(d.L-yaw),k:'toeF',h:1};
