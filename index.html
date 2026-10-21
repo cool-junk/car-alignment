@@ -102,11 +102,11 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  up vector in device frame:  u = (R'20, R'21, R'22) = (-cos b sin g, sin b, cos b cos g)
  TOE    heading of device long axis (y): h = atan2(R'01, R'11) = -alpha when flat; wheel line = h mod 180
         total toe = wrap180(hL - hR)  (+ = toe-in); individual toe vs thrust line T=(hRL+hRR)/2: L = hL-T, R = -(hR-T)
- CAMBER screen normal z points out of the car: camber = asin(R'22) = asin(cos b·cos g)  (+ = top out, either side)
+ CAMBER screen normal z points out of the car: camber = -asin(R'22) = -asin(cos b·cos g)  (+ = top out: the outward normal tilts DOWN)
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v7';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v8';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -121,7 +121,7 @@ function onOri(e){if(e.beta==null||e.alpha==null)return;const R0=rotM(e.alpha*D,
  if(buf)buf.push(R0.slice(6));if(!t0)t0=performance.now()/1e3;
  const f=[R[6],R[7],R[8],R[1],R[4],R[2],R[5]];V=V?V.map((x,i)=>x+.12*(f[i]-x)):f}   /* EMA low-pass on vector components */
 const tt=()=>performance.now()/1e3-t0;
-const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>Math.asin(Math.max(-1,Math.min(1,V[2])))/D-Math.sign(V[0])*S.cx;
+const hY=()=>Math.atan2(V[3],V[4])/D-S.dr*tt(),hZ=()=>Math.atan2(V[5],V[6])/D-S.dr*tt(),cam=()=>-(Math.asin(Math.max(-1,Math.min(1,V[2])))/D-Math.sign(V[0])*S.cx);
 const scr=(x,y)=>window.orientation==-90?[y,-x]:[-y,x];
 const fmt=v=>{if(S.dm){let a=Math.abs(v),d=Math.floor(a),m=Math.round((a-d)*60);if(m==60){d++;m=0}return(v<0&&(d||m)?'-':'')+d+'° '+String(m).padStart(2,'0')+"'"}return(Math.abs(v)<.005?0:v).toFixed(2)+'°'};
 document.querySelectorAll('.ver').forEach(e=>e.textContent='Version '+VER);
