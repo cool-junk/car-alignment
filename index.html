@@ -187,10 +187,12 @@ function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#car').innerHTML=carSVG
  if(s.k=='zero'&&!s.np)q('#inst').textContent=INST.camber+' Point the wheels straight ahead.';
  q('#meas').classList.toggle('pl',!F.stage)}
 q('#ready').onclick=()=>{const s=F.steps[F.i];if(s.k=='toe'&&F.base==null&&V)F.base=hY();F.stage=1;q('#meas').classList.remove('pl')};
-q('#cap').onclick=()=>{const s=F.steps[F.i];
+let AC;const beep=()=>{try{const o=AC.createOscillator();o.connect(AC.destination);o.frequency.value=880;o.start();o.stop(AC.currentTime+.15)}catch(e){}};
+const doCap=()=>{beep();F.arm=0;F.t0=0;const s=F.steps[F.i];
  if(s.k=='toe')F.d[s.id]=w180(hY()-F.base);else if(s.k=='camber')F.d[s.id]=cam();
  else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};F.cv[wk(s.w)]=s.k=='camber'?fmt(F.d[s.id]):'';
  if(++F.i<F.steps.length)step();else{F.stage=0;const m=F.f.m(F.d,F.steps[0].w);Object.assign(RS.d[RS.st],m);saveR();q('#rt').textContent=F.f.t+' ('+RS.st+')';q('#rb').innerHTML=ITEMS.filter(i=>m[i[0]]!=null).map(i=>row(i[1],fmt(m[i[0]]),i[4],i[2],m[i[0]],i[3])).join('');q('#rn').textContent=Object.keys(specs()).length?'':'No specs for this vehicle yet. Add them under Vehicle & specs.';show('res')}};
+q('#cap').onclick=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}F.arm=!F.arm;F.t0=0};
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
 for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
@@ -260,7 +262,7 @@ function tick(){requestAnimationFrame(tick);try{if(F&&V&&F.stage&&F.steps[F.i]){
   else{lv=Math.abs(Math.asin(uy)/D);b=scr(0,uy);v=cam();sub='Level error '+lv.toFixed(1)+'°'}
   let ok=lv<tol;
   if(s.k=='sweep'){v=F.sg*w360(hZ()-F.h0);ok=ok&&Math.abs(v-s.tgt)<1;sub='Target '+fmt(s.tgt)+'. Camber now '+fmt(cam())}
-  const sp=s.k=='toe'||s.k=='camber'?lsp(s,v):null,e=sp&&ev(sp.k,sp.v,sp.h),sE=q('#spec');q('#val').textContent=fmt(sp?sp.v:v);q('#sub').textContent=sub;sE.textContent=e?'Spec '+fmt(e.t)+' ± '+fmt(e.tol)+'. Off by '+fmt(e.d):'';sE.className=e?e.ok?'ok2':'no2':'';q('#lvl').classList.toggle('ok',lv<tol);q('#cap').disabled=!ok;
+  const sp=s.k=='toe'||s.k=='camber'?lsp(s,v):null,e=sp&&ev(sp.k,sp.v,sp.h),sE=q('#spec');q('#val').textContent=fmt(sp?sp.v:v);q('#sub').textContent=sub;sE.textContent=e?'Spec '+fmt(e.t)+' ± '+fmt(e.tol)+'. Off by '+fmt(e.d):'';sE.className=e?e.ok?'ok2':'no2':'';q('#lvl').classList.toggle('ok',lv<tol);const n=performance.now();if(F.arm){if(!ok)F.t0=0;else{if(!F.t0)F.t0=n;if(n-F.t0>=900){doCap();return}}}const cb=q('#cap');cb.disabled=false;cb.textContent=F.arm?(ok?'Hold still… '+Math.max(0,(900-(n-F.t0))/1000).toFixed(1):'Waiting for level… (tap to cancel)'):'Arm capture';
   const c=x=>Math.max(-50,Math.min(50,x*57.3*12))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}}catch(e){}}
 tick();
 </script></body></html>
