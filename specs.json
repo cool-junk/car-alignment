@@ -1,7 +1,7 @@
 {"_README":"Key entries as YEAR|MAKE|MODEL in uppercase, or MAKE|MODEL to cover all years. Each spec is [target, plus-or-minus tolerance] in decimal degrees. toeF and toeR are TOTAL toe for the axle. Take values from the OEM service manual or your alignment data subscription.",
 "_EXAMPLE|MAKE|MODEL":{"camF":[0,0.5],"casF":[0,1],"toeF":[0,0.1],"toeR":[0,0.1],"thr":[0,0.1]},
-"2020|TESLA|MODEL Y":{"camF":[-0.3,0.45],"casF":[5.7,1],"toeF":[0.06,0.3],"toeR":[0.34,0.3]},
+"2020-2024|TESLA|MODEL Y":{"camF":[-0.3,0.45],"casF":[5.7,1],"toeF":[0.06,0.3],"toeR":[0.34,0.3]},
 "2021|TESLA|MODEL 3 LONG RANGE RWD":{"camF":[-0.3,0.45],"casF":[5.7,1],"toeF":[0.12,0.1],"toeR":[0.36,0.1]},
 "2017|TESLA|MODEL S 75D":{"camF":[-0.75,0.35],"casF":[4.2,0.5],"toeF":[0,0.2],"toeR":[0.4,0.1]},
-"2005|FORD|F-150 FX4 4WD":{"camF":[-0.2,0.75],"casF":[4.6,1],"toeF":[0.15,0.2],"toeR":[0,0.2],"thr":[0,0.3]}
+"2004-2008|FORD|F-150 FX4 4WD":{"camF":[-0.2,0.75],"casF":[4.6,1],"toeF":[0.15,0.2],"toeR":[0,0.2],"thr":[0,0.3]}
 }
