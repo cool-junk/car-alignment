@@ -32,7 +32,7 @@ svg{width:100%;max-height:26vh}
 table{width:100%;border-collapse:collapse;font-size:24px}td{padding:10px 6px;border-bottom:1px solid #26313d}td+td{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}td small{color:var(--mut);font-weight:500;font-size:15px}
 #rot{position:fixed;inset:0;background:var(--bg);z-index:9;display:none;align-items:center;justify-content:center;text-align:center;font-size:28px}
 @media (orientation:portrait){#rot{display:flex}}
-select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10px;border:1px solid #33414f;background:var(--card);color:var(--fg);width:100%;-webkit-user-select:text;user-select:text}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sc{overflow-y:auto;-webkit-overflow-scrolling:touch}.ok2{color:var(--ok)}.no2{color:var(--bad)}#rep{display:none}
+select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10px;border:1px solid #33414f;background:var(--card);color:var(--fg);width:100%;-webkit-user-select:text;user-select:text}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sc{overflow-y:auto;-webkit-overflow-scrolling:touch}.sc>*{flex-shrink:0}.stk{position:sticky;bottom:0;background:var(--bg);padding:8px 0}.ok2{color:var(--ok)}.no2{color:var(--bad)}#rep{display:none}
 @media print{html,body{overflow:visible!important;height:auto!important;background:#fff!important}body>*:not(#rep){display:none!important}#rep{display:block!important;color:#000;font:14px -apple-system,system-ui,sans-serif}#rep td{border-bottom:1px solid #bbb;padding:5px 4px;color:#000;font-size:13px}#rep th{text-align:right;border-bottom:2px solid #000;padding:4px;font-size:13px}#rep th:first-child{text-align:left}#rep .ok2{color:#0a7a2f}#rep .no2{color:#c00}@page{margin:12mm}}
 </style></head><body>
 <div id="rot"><div>Rotate the phone to landscape<br><p>Turn off Portrait Orientation Lock in Control Center</p></div></div>
@@ -75,9 +75,9 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  </div>
 </section>
 
-<section id="res" class="scr">
+<section id="res" class="scr sc">
  <h1 id="rt"></h1><table id="rb"></table><p id="rn"></p><span class="sp"></span>
- <div class="row"><button id="redo">Measure again</button><button id="toRep">Report</button><button class="p" id="done">Done</button></div>
+ <div class="row stk"><button id="redo">Measure again</button><button id="toRep">Report</button><button class="p" id="done">Done</button></div>
 </section>
 
 <section id="veh" class="scr sc">
