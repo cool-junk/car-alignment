@@ -48,7 +48,8 @@ The dashboard has a tile for each job. Every job follows the same steps: place t
 | Job | What you do |
 |---|---|
 | **Quick Align** | Total toe. Measure the left wheel, then the right. |
-| **Camber** | Measure the left wheel, then the right. |
+| **Camber: front** | Measure the front left wheel, then the front right. |
+| **Camber: rear** | Measure the rear left wheel, then the rear right. |
 | **4-Wheel / Thrust** | Rear left, rear right, front left, front right. Gives individual toe for each wheel and a thrust angle. |
 | **Caster: left / right** | Set the wheels straight ahead, turn 15° out, then 15° in (past center). The phone's live angle tells you when you're at the target. |
 
@@ -70,7 +71,7 @@ Keep the app open between wheels. Toe depends on a continuous yaw reference, so 
 
 ## Vehicle specs
 
-Choose a vehicle on the dashboard's **Vehicle & specs** tile. The Year, Make, and Model dropdowns list only vehicles that are in `specs.json` or that you added on the phone. Once a vehicle is selected, the live reading turns green or red against spec while you measure (camber, the second front-toe wheel, and the 4-wheel toe steps), and the results screen and report show each reading against its spec. Caster is compared on the results screen.
+Choose a vehicle on the dashboard's **Vehicle & specs** tile. The Year, Make, and Model dropdowns list only vehicles that are in `specs.json` or that you added on the phone. Once a vehicle is selected, the live reading turns green or red against spec while you measure (front and rear camber, the second front-toe wheel, and the 4-wheel toe steps), and the results screen and report show each reading against its spec. Caster is compared on the results screen.
 
 ### Adding a vehicle
 
@@ -78,7 +79,7 @@ Tap **+ Add vehicle** and fill in:
 
 - **Year:** a single year (`2023`), a range (`2020-2025`), or blank for all years
 - **Make** and **Model**
-- **Specs:** a target and a ± tolerance for any of front camber, front caster, front total toe, rear total toe, and thrust angle. Use **decimal degrees** (0.17 is 0° 10'), and negative numbers for negative camber.
+- **Specs:** a target and a ± tolerance for any of front camber, rear camber, front caster, front total toe, rear total toe, and thrust angle. Use **decimal degrees** (0.17 is 0° 10'), and negative numbers for negative camber.
 
 Toe specs are whole-axle totals. Each wheel's individual toe is judged against half of the total. Use **Edit specs** to change a vehicle and **Delete** to remove one added on the phone.
 
@@ -99,7 +100,7 @@ Vehicles added in the app live only on that phone. To keep them permanently, tap
 
 - Keys are `YEAR|MAKE|MODEL` or `YEAR1-YEAR2|MAKE|MODEL`, in uppercase. `MAKE|MODEL` covers all years.
 - Each spec is `[target, tolerance]`.
-- Spec keys: `camF` front camber, `casF` front caster, `toeF` front total toe, `toeR` rear total toe, `thr` thrust angle.
+- Spec keys: `camF` front camber, `camR` rear camber, `casF` front caster, `toeF` front total toe, `toeR` rear total toe, `thr` thrust angle.
 - Keys starting with `_` are ignored, so they can hold notes.
 
 ## Before / After and reports
@@ -117,13 +118,12 @@ Open **Report** to enter shop name, customer, technician, plate or VIN, odometer
 
 ## Units
 
-The **Units** tile switches between degrees and minutes (`-1° 30'`) and decimal degrees (`-1.50°`).
+The **Units** button in the top bar of the dashboard switches between degrees and minutes (`-1° 30'`) and decimal degrees (`-1.50°`).
 
 ## Limits worth knowing
 
 - **Toe accuracy depends on the yaw reference.** iPhones don't give a compass-stable heading in this mode, so yaw comes from the gyroscope and can drift. Calibrate the drift, work in one continuous session, and move steadily between wheels.
 - **Thrust angle** is the rear thrust direction compared with the direction of the front axle, because yaw alone can't locate the car's true centerline.
-- **Rear camber** is not measured.
 - Verify the numbers against a known reference before trusting them on customer vehicles.
 
 ## Updating
