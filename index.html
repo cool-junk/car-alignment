@@ -36,6 +36,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
 @media print{html,body{overflow:visible!important;height:auto!important;background:#fff!important}body>*:not(#rep){display:none!important}#rep{display:block!important;color:#000;font:14px -apple-system,system-ui,sans-serif}#rep td{border-bottom:1px solid #bbb;padding:5px 4px;color:#000;font-size:13px}#rep th{text-align:right;border-bottom:2px solid #000;padding:4px;font-size:13px}#rep th:first-child{text-align:left}#rep .ok2{color:#0a7a2f}#rep .no2{color:#c00}@page{margin:12mm}}
 .ver{font-size:12px;font-weight:500;color:var(--mut);align-self:flex-end}.ver.a{position:absolute;right:22px;bottom:8px}
 .main>div{gap:8px}.big{height:68px;line-height:68px;white-space:nowrap}#spec{height:26px;line-height:26px;white-space:nowrap}#sub{height:24px;line-height:24px;overflow:hidden;white-space:nowrap}#cap{height:56px;width:300px;max-width:100%;padding:0 12px;font-size:22px!important;white-space:nowrap;overflow:hidden}.lvl{width:116px!important;height:116px!important}
+.hdr button{padding:10px 14px;font-size:17px}
 </style></head><body>
 <div id="rot"><div>Rotate the phone to landscape<br><p>Turn off Portrait Orientation Lock in Control Center</p></div></div>
 
@@ -52,14 +53,14 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
 </section>
 
 <section id="dash" class="scr">
- <div class="row"><h1>Wheel Align</h1><span class="sp"></span><button id="stg"></button><button id="recal">Recalibrate</button></div>
+ <div class="row hdr"><h1>Wheel Align</h1><span class="sp"></span><button id="t-units">Units: <span id="uLbl"></span></button><button id="stg"></button><button id="recal">Recalibrate</button></div>
  <div class="tiles">
   <button id="t-toe">Quick Align<small>Total toe, left then right</small></button>
-  <button id="t-camber">Camber<small>Both wheels, vs gravity</small></button>
+  <button id="t-camber">Camber: front<small>Both front wheels</small></button>
+  <button id="t-camberR">Camber: rear<small>Both rear wheels</small></button>
   <button id="t-four">4-Wheel / Thrust<small>Rear axle first, then front toe</small></button>
   <button id="t-casL">Caster: left<small>15° out / 15° in sweep</small></button>
   <button id="t-casR">Caster: right<small>15° out / 15° in sweep</small></button>
-  <button id="t-units">Units<small id="uLbl"></small></button>
   <button id="t-veh">Vehicle &amp; specs<small id="vLbl"></small></button>
   <button id="t-rep">Report<small>Print for the customer</small></button>
  </div>
@@ -114,7 +115,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v10';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v11';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -182,7 +183,7 @@ const WN={L:'Left',R:'Right',FL:'Front left',FR:'Front right',RL:'Rear left',RR:
 const INST={toe:'Rest the phone on the adapter with its long bottom edge against the rim. Screen faces up.',camber:'Hold the back of the phone flat on the wheel face, landscape, screen facing away from the car.'};
 
 /* flows */
-const ITEMS=[['camFL','Front left camber','camF',1,'+ is top of wheel out'],['camFR','Front right camber','camF',1,''],['casL','Left caster','casF',1,'+ is top of steering axis rearward'],['casR','Right caster','casF',1,''],
+const ITEMS=[['camFL','Front left camber','camF',1,'+ is top of wheel out'],['camFR','Front right camber','camF',1,''],['camRL','Rear left camber','camR',1,''],['camRR','Rear right camber','camR',1,''],['casL','Left caster','casF',1,'+ is top of steering axis rearward'],['casR','Right caster','casF',1,''],
 ['toeFL','Front left toe','toeF',.5,'+ is toe-in'],['toeFR','Front right toe','toeF',.5,''],['toeF','Front total toe','toeF',1,'+ is toe-in'],
 ['toeRL','Rear left toe','toeR',.5,''],['toeRR','Rear right toe','toeR',.5,''],['toeR','Rear total toe','toeR',1,''],['thr','Thrust angle','thr',1,'+ is right']];
 const ev=(k,v,h)=>{const s=specs()[k];if(!s||s[0]==null||s[1]==null)return null;const t=s[0]*h,tol=Math.abs(s[1])*h;return{t,tol,d:v-t,ok:Math.abs(v-t)<=tol+1e-9}};
@@ -190,6 +191,7 @@ const row=(a,b,c,k,v,h)=>{const e=k&&v!=null?ev(k,v,h):null;return`<tr><td>${a}$
 const FL={
  toe:{t:'Quick Align: total toe',s:()=>['L','R'].map(w=>({k:'toe',w,id:w})),m:d=>({toeF:w180(d.L-d.R)})},
  camber:{t:'Camber',s:()=>['L','R'].map(w=>({k:'camber',w,id:w})),m:d=>({camFL:d.L,camFR:d.R})},
+ camberR:{t:'Rear camber',s:()=>['RL','RR'].map(w=>({k:'camber',w,id:w})),m:d=>({camRL:d.RL,camRR:d.RR})},
  four:{t:'4-Wheel / Thrust',s:()=>['RL','RR','FL','FR'].map(w=>({k:'toe',w,id:w})),m:d=>{const T=(d.RL+d.RR)/2;return{toeRL:d.RL-T,toeRR:-(d.RR-T),toeFL:d.FL-T,toeFR:-(d.FR-T),toeR:d.RL-d.RR,toeF:d.FL-d.FR,thr:T-(d.FL+d.FR)/2}}},
  cas:{t:'Caster',s:w=>[{k:'zero',w,id:'z'},{k:'sweep',w,id:'o',tgt:15,np:1},{k:'sweep',w,id:'i',tgt:-15,np:1}],m:(d,w)=>({['cas'+w]:(d.o.c-d.i.c)/(Math.sin(d.o.a*D)+Math.sin(-d.i.a*D))})}};
 function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},cv:{},base:null};show('meas');step()}
@@ -207,8 +209,8 @@ const doCap=()=>{beep();F.arm=0;F.t0=0;const s=F.steps[F.i];
 q('#cap').onclick=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}F.arm=!F.arm;F.t0=0};
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
-for(const[id,k,w]of[['toe','toe'],['camber','camber'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
-const upU=()=>{q('#uLbl').textContent=S.dm?'Degrees and minutes':'Decimal degrees';q('#vLbl').textContent=RS.v.mk?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Choose a vehicle';q('#stg').textContent='Stage: '+RS.st};
+for(const[id,k,w]of[['toe','toe'],['camber','camber'],['camberR','camberR'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
+const upU=()=>{q('#uLbl').textContent=S.dm?'deg/min':'decimal';q('#vLbl').textContent=RS.v.mk?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Choose a vehicle';q('#stg').textContent='Stage: '+RS.st};
 q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
 
 /* visuals */
@@ -231,7 +233,7 @@ const FP=fetch('specs.json').then(r=>r.json()).then(j=>{FSP=j}).catch(()=>{});
 const saveR=()=>{try{localStorage.alr=JSON.stringify(RS);localStorage.als=JSON.stringify(SP)}catch(e){}};
 const vk=()=>RS.v.key||(RS.v.y&&RS.v.mk&&RS.v.md?[RS.v.y,RS.v.mk,RS.v.md].join('|').toUpperCase():'');
 const specs=()=>{const k=vk();return k?SP[k]||FSP[k]||{}:{}};
-const SK=[['camF','Front camber'],['casF','Front caster'],['toeF','Front total toe'],['toeR','Rear total toe'],['thr','Thrust angle']];
+const SK=[['camF','Front camber'],['camR','Rear camber'],['casF','Front caster'],['toeF','Front total toe'],['toeR','Rear total toe'],['thr','Thrust angle']];
 q('#vsp').innerHTML=SK.map(([k,l])=>`<tr><td>${l}</td><td><input type="number" step="any" id="s_${k}_0" placeholder="target"></td><td><input type="number" step="any" id="s_${k}_1" placeholder="± tolerance"></td></tr>`).join('');
 /* vehicle list = only what is in specs.json plus vehicles added on this phone */
 const vlist=()=>[...new Set([...Object.keys(FSP),...Object.keys(SP)])].filter(k=>k[0]!='_'&&k.includes('|')).map(k=>{const p=k.split('|');if(p.length<3)return{k,ys:'',y0:0,y1:9999,mk:p[0],md:p[1]};const m=p[0].match(/^(\d{4})(?:-(\d{4}))?$/);return m?{k,ys:p[0],y0:+m[1],y1:+(m[2]||m[1]),mk:p[1],md:p.slice(2).join('|')}:null}).filter(Boolean);
@@ -267,7 +269,7 @@ q('#vCopy').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify({...FS
 q('#vOk').onclick=()=>{upU();show('dash')};
 q('#t-veh').onclick=()=>vOpen();q('#stg').onclick=()=>{RS.st=RS.st=='before'?'after':'before';saveR();upU()};
 /* live comparison against spec while measuring */
-function lsp(s,yaw){const d=F.d;if(F.k=='camber')return{v:cam(),k:'camF',h:1};
+function lsp(s,yaw){const d=F.d;if(F.k=='camber'||F.k=='camberR')return{v:cam(),k:F.k=='camber'?'camF':'camR',h:1};
  if(F.k=='toe'&&s.w=='R')return{v:w180(d.L-yaw),k:'toeF',h:1};
  if(F.k=='four'){const T=(d.RL+d.RR)/2;if(s.w=='RR')return{v:d.RL-yaw,k:'toeR',h:1};if(s.w=='FL')return{v:yaw-T,k:'toeF',h:.5};if(s.w=='FR')return{v:-(yaw-T),k:'toeF',h:.5}}return null}
 /* report */
