@@ -47,11 +47,20 @@ The dashboard has a tile for each job. Every job follows the same steps: place t
 
 | Job | What you do |
 |---|---|
-| **Quick Align** | Total toe. Measure the left wheel, then the right. |
+| **Quick Align** | Total toe: left, right, then left again to close out drift. |
 | **Camber: front** | Measure the front left wheel, then the front right. |
 | **Camber: rear** | Measure the rear left wheel, then the rear right. |
-| **4-Wheel / Thrust** | Rear left, rear right, front left, front right. Gives individual toe for each wheel and a thrust angle. |
+| **4-Wheel / Thrust** | Rear first: rear left, rear right, rear left again. Then front left, front right, front left again. Gives individual toe for each wheel and a thrust angle. |
+| **Body align** | Rear left, rear right, rear left again, then the same reference point on the left side of the body, the right side, and the left again. Gives the thrust angle against the body centerline. |
 | **Caster: left / right** | Set the wheels straight ahead, turn 15° out, then 15° in (past center). The phone's live angle tells you when you're at the target. |
+
+### Closing readings (drift correction)
+
+Every toe job ends each loop by measuring the first wheel a second time, in the same spot and the same way. Any change between the first and closing readings is treated as sensor drift. It is spread over the time between readings and removed from every reading in the loop. Results show a **loop closure** row with the change that was removed. A large value means the phone was placed differently or something moved, so repeat the loop.
+
+### Body align
+
+This compares the body's centerline with the thrust line from the rear wheels. Pick one reference point on each side of the body that is the same distance from the front wheels (a flat stretch of rocker panel or pinch weld works well, not a flared fender). Rest the phone flat, screen up, with its long edge against that point, outboard of the body on both sides. The body centerline is the average of the two side readings. **Thrust angle vs body centerline** is the thrust line compared with that centerline (+ is right). Choose points where the body's sides are symmetrical about its centerline, or the result is not meaningful.
 
 A small car diagram shows the current wheel in blue and finished wheels in green.
 
