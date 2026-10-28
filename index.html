@@ -18,8 +18,8 @@ h1{margin:0;font-size:30px}p{margin:0;color:var(--mut);line-height:1.35}
 .row{display:flex;gap:16px;align-items:center}.sp{flex:1}.c{justify-content:center;align-items:center;text-align:center}
 button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:14px 22px;background:var(--card);color:var(--fg);font-size:20px}
 button.p{background:var(--acc);color:#001}button:disabled{opacity:.28}
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1}
-.tiles button{text-align:left;font-size:20px;padding:14px;line-height:1.15}.tiles small{display:block;color:var(--mut);font-weight:500;font-size:15px;margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;flex:1}
+.tiles button{text-align:left;font-size:18px;padding:12px;line-height:1.15}.tiles small{display:block;color:var(--mut);font-weight:500;font-size:15px;margin-top:6px}
 #bar{height:8px;width:0;background:var(--ok);border-radius:4px}
 .main{display:flex;gap:22px;flex:1;min-height:0}.main>div{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;align-items:center;text-align:center}
 svg{width:100%;max-height:26vh}
@@ -59,6 +59,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
   <button id="t-camber">Camber: front<small>Both front wheels</small></button>
   <button id="t-camberR">Camber: rear<small>Both rear wheels</small></button>
   <button id="t-four">4-Wheel / Thrust<small>Rear axle first, then front toe</small></button>
+  <button id="t-body">Body align<small>Rear wheels vs body centerline</small></button>
   <button id="t-casL">Caster: left<small>15° out / 15° in sweep</small></button>
   <button id="t-casR">Caster: right<small>15° out / 15° in sweep</small></button>
   <button id="t-veh">Vehicle &amp; specs<small id="vLbl"></small></button>
@@ -115,7 +116,7 @@ select,input,textarea{font:inherit;font-size:18px;padding:10px;border-radius:10p
  STEER  heading of screen normal: s = atan2(R'02, R'12); turn = sgn·wrap360(s - s0), sgn = -1 left wheel, +1 right (out = +)
  CASTER = (C1 - C2) / (sin T1 + sin T2), C1 at T1 out, C2 at T2 in  (+ = top of steering axis tilted rearward)
  Level: toe = hypot(u_x,u_y) < 0.15°; camber/caster = |u_y| < 1° (long axis horizontal) */
-const VER='v11';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
+const VER='v12';const q=s=>document.querySelector(s),D=Math.PI/180,sl=ms=>new Promise(r=>setTimeout(r,ms));
 let S={dm:1,M:[1,0,0,0,1,0,0,0,1],dr:0,cal:0,cx:0};try{S={...S,...JSON.parse(localStorage.al)}}catch(e){}
 const save=()=>{try{localStorage.al=JSON.stringify(S)}catch(e){}};
 const mm=(a,b)=>{const r=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)r.push(a[3*i]*b[j]+a[3*i+1]*b[3+j]+a[3*i+2]*b[6+j]);return r};
@@ -177,39 +178,46 @@ q('#calGo').onclick=async()=>{const b=q('#calGo');b.disabled=true;
  b.disabled=false};
 
 /* illustrations */
-const ILL={toe:'<svg viewBox="0 0 220 130"><rect x="20" y="12" width="180" height="32" rx="6" fill="#555"/><text x="110" y="33" fill="#ddd" font-size="13" text-anchor="middle">wheel / rim, top view</text><rect x="45" y="50" width="130" height="58" rx="8" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><text x="110" y="85" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">SCREEN UP</text></svg>',
+const ILL={body:'<svg viewBox="0 0 220 130"><rect x="75" y="6" width="70" height="118" rx="24" fill="#2b3a4a"/><text x="110" y="68" fill="#9aa7b5" font-size="12" text-anchor="middle">BODY</text><rect x="40" y="40" width="32" height="56" rx="5" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><rect x="148" y="40" width="32" height="56" rx="5" fill="none" stroke="#4aa8ff" stroke-width="2" stroke-dasharray="5"/><text x="110" y="122" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">SCREEN UP, SAME POINT BOTH SIDES</text></svg>',toe:'<svg viewBox="0 0 220 130"><rect x="20" y="12" width="180" height="32" rx="6" fill="#555"/><text x="110" y="33" fill="#ddd" font-size="13" text-anchor="middle">wheel / rim, top view</text><rect x="45" y="50" width="130" height="58" rx="8" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><text x="110" y="85" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">SCREEN UP</text></svg>',
 cam:'<svg viewBox="0 0 220 130"><rect x="30" y="8" width="36" height="114" rx="8" fill="#555"/><text x="48" y="68" fill="#ddd" font-size="12" text-anchor="middle" transform="rotate(-90 48 65)">wheel, front view</text><rect x="70" y="20" width="14" height="90" rx="3" fill="#1d3b5c" stroke="#4aa8ff" stroke-width="3"/><path d="M96 65h76" stroke="#19e36b" stroke-width="5"/><path d="M180 65l-14-9v18z" fill="#19e36b"/><text x="138" y="52" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">SCREEN OUT</text></svg>'};
-const WN={L:'Left',R:'Right',FL:'Front left',FR:'Front right',RL:'Rear left',RR:'Rear right'};
-const INST={toe:'Rest the phone on the adapter with its long bottom edge against the rim. Screen faces up.',camber:'Hold the back of the phone flat on the wheel face, landscape, screen facing away from the car.'};
+const WN={BL:'Left body',BR:'Right body',L:'Left',R:'Right',FL:'Front left',FR:'Front right',RL:'Rear left',RR:'Rear right'};
+const INST={body:'Rest the phone flat, screen up, with its long edge against the body at the same reference point on each side (for example the rocker panel or pinch weld, the same distance from the front wheels). Keep the phone outboard on both sides.',toe:'Rest the phone on the adapter with its long bottom edge against the rim. Screen faces up.',camber:'Hold the back of the phone flat on the wheel face, landscape, screen facing away from the car.'};
 
 /* flows */
 const ITEMS=[['camFL','Front left camber','camF',1,'+ is top of wheel out'],['camFR','Front right camber','camF',1,''],['camRL','Rear left camber','camR',1,''],['camRR','Rear right camber','camR',1,''],['casL','Left caster','casF',1,'+ is top of steering axis rearward'],['casR','Right caster','casF',1,''],
 ['toeFL','Front left toe','toeF',.5,'+ is toe-in'],['toeFR','Front right toe','toeF',.5,''],['toeF','Front total toe','toeF',1,'+ is toe-in'],
-['toeRL','Rear left toe','toeR',.5,''],['toeRR','Rear right toe','toeR',.5,''],['toeR','Rear total toe','toeR',1,''],['thr','Thrust angle','thr',1,'+ is right']];
+['toeRL','Rear left toe','toeR',.5,''],['toeRR','Rear right toe','toeR',.5,''],['toeR','Rear total toe','toeR',1,''],['thr','Thrust angle','thr',1,'+ is right'],['thrB','Thrust angle vs body centerline','thr',1,'+ is thrust line right of body centerline'],['clR','Rear loop closure','',1,'drift removed between first and closing reading'],['clF','Front loop closure','',1,'drift removed between first and closing reading'],['clB','Body loop closure','',1,'drift removed between first and closing reading']];
 const ev=(k,v,h)=>{const s=specs()[k];if(!s||s[0]==null||s[1]==null)return null;const t=s[0]*h,tol=Math.abs(s[1])*h;return{t,tol,d:v-t,ok:Math.abs(v-t)<=tol+1e-9}};
 const row=(a,b,c,k,v,h)=>{const e=k&&v!=null?ev(k,v,h):null;return`<tr><td>${a}${c?'<br><small>'+c+'</small>':''}</td><td class="${e?e.ok?'ok2':'no2':''}">${b}</td><td>${e?'<small>'+fmt(e.t)+' ± '+fmt(e.tol)+'</small>':''}</td></tr>`};
+const TS=a=>a.map(([id,w])=>({k:'toe',w,id,cl:/2$/.test(id),body:w[0]=='B'}));
+/* drift close-out: each loop is [first, middle, closing] readings of the same spot; the change between first and closing, spread over time, is removed */
+function dcor(d,t,loops){const segs=[],rt=loops.map(([a,,z])=>w180(d[z]-d[a])/Math.max(1,t[z]-t[a]));
+ loops.forEach(([a,,z],i)=>{segs.push([t[a],t[z],rt[i]]);const n=loops[i+1];if(n)segs.push([t[z],t[n[0]],(rt[i]+rt[i+1])/2])});
+ const cor=x=>{let c=0;for(const[a,b,r]of segs){if(x<=a)break;c+=r*(Math.min(x,b)-a)}return c},o={};
+ loops.forEach(l=>l.forEach(id=>o[id]=d[id]-cor(t[id])));return o}
 const FL={
- toe:{t:'Quick Align: total toe',s:()=>['L','R'].map(w=>({k:'toe',w,id:w})),m:d=>({toeF:w180(d.L-d.R)})},
+ toe:{t:'Quick Align: total toe',s:()=>TS([['L','L'],['R','R'],['L2','L']]),m:(d,w,t)=>{const c=dcor(d,t,[['L','R','L2']]);return{toeF:w180(c.L-c.R),clF:w180(d.L2-d.L)}}},
  camber:{t:'Camber',s:()=>['L','R'].map(w=>({k:'camber',w,id:w})),m:d=>({camFL:d.L,camFR:d.R})},
  camberR:{t:'Rear camber',s:()=>['RL','RR'].map(w=>({k:'camber',w,id:w})),m:d=>({camRL:d.RL,camRR:d.RR})},
- four:{t:'4-Wheel / Thrust',s:()=>['RL','RR','FL','FR'].map(w=>({k:'toe',w,id:w})),m:d=>{const T=(d.RL+d.RR)/2;return{toeRL:d.RL-T,toeRR:-(d.RR-T),toeFL:d.FL-T,toeFR:-(d.FR-T),toeR:d.RL-d.RR,toeF:d.FL-d.FR,thr:T-(d.FL+d.FR)/2}}},
+ four:{t:'4-Wheel / Thrust',s:()=>TS([['RL','RL'],['RR','RR'],['RL2','RL'],['FL','FL'],['FR','FR'],['FL2','FL']]),m:(d,w,t)=>{const c=dcor(d,t,[['RL','RR','RL2'],['FL','FR','FL2']]),T=(c.RL+c.RR)/2;return{toeRL:c.RL-T,toeRR:-(c.RR-T),toeFL:c.FL-T,toeFR:-(c.FR-T),toeR:c.RL-c.RR,toeF:c.FL-c.FR,thr:T-(c.FL+c.FR)/2,clR:w180(d.RL2-d.RL),clF:w180(d.FL2-d.FL)}}},
+ body:{t:'Body align',s:()=>TS([['RL','RL'],['RR','RR'],['RL2','RL'],['BL','BL'],['BR','BR'],['BL2','BL']]),m:(d,w,t)=>{const c=dcor(d,t,[['RL','RR','RL2'],['BL','BR','BL2']]),T=(c.RL+c.RR)/2,B=(c.BL+c.BR)/2;return{toeRL:c.RL-T,toeRR:-(c.RR-T),toeR:c.RL-c.RR,thrB:T-B,clR:w180(d.RL2-d.RL),clB:w180(d.BL2-d.BL)}}},
  cas:{t:'Caster',s:w=>[{k:'zero',w,id:'z'},{k:'sweep',w,id:'o',tgt:15,np:1},{k:'sweep',w,id:'i',tgt:-15,np:1}],m:(d,w)=>({['cas'+w]:(d.o.c-d.i.c)/(Math.sin(d.o.a*D)+Math.sin(-d.i.a*D))})}};
-function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},cv:{},base:null};show('meas');step()}
-function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#car').innerHTML=carSVG(wk(s.w),F.cv);q('#mt').textContent=(WN[s.w]||'')+' wheel: '+({toe:'toe',camber:'camber',zero:'straight ahead',sweep:s.tgt>0?'turn '+s.tgt+'° OUT':'turn '+(-s.tgt)+'° IN, past centre'})[s.k];
+function start(k,w){const f=FL[k];F={k,f,steps:f.s(w),i:0,d:{},cv:{},t:{},base:null};show('meas');step()}
+function step(){const s=F.steps[F.i];F.stage=s.np?1:0;q('#car').innerHTML=carSVG(wk(s.w),F.cv);q('#mt').textContent=s.body?WN[s.w]+' reference point'+(s.cl?', closing check':''):(WN[s.w]||'')+' wheel: '+({toe:s.cl?'toe, closing check':'toe',camber:'camber',zero:'straight ahead',sweep:s.tgt>0?'turn '+s.tgt+'° OUT':'turn '+(-s.tgt)+'° IN, past centre'})[s.k];
  q('#mp').textContent=F.f.t+'. Step '+(F.i+1)+' of '+F.steps.length;
- q('#ill').innerHTML=s.k=='toe'?ILL.toe:ILL.cam;q('#inst').textContent=s.k=='toe'||s.k=='camber'||!s.np&&s.k=='zero'?INST[s.k=='toe'?'toe':'camber']:s.k=='zero'?'':'Turn the steering wheel until the angle reaches the target. Keep the phone flat on the wheel.';
- if(s.k=='zero'&&!s.np)q('#inst').textContent=INST.camber+' Point the wheels straight ahead.';
+ q('#ill').innerHTML=s.body?ILL.body:s.k=='toe'?ILL.toe:ILL.cam;q('#inst').textContent=s.k=='toe'||s.k=='camber'||!s.np&&s.k=='zero'?INST[s.k=='toe'?'toe':'camber']:s.k=='zero'?'':'Turn the steering wheel until the angle reaches the target. Keep the phone flat on the wheel.';
+ if(s.body)q('#inst').textContent=INST.body;if(s.cl)q('#inst').textContent='Closing check: place the phone in the same spot again, the same way as the first time. This removes sensor drift from the readings.';if(s.k=='zero'&&!s.np)q('#inst').textContent=INST.camber+' Point the wheels straight ahead.';
  q('#meas').classList.toggle('pl',!F.stage)}
 q('#ready').onclick=()=>{const s=F.steps[F.i];if(s.k=='toe'&&F.base==null&&V)F.base=hY();F.stage=1;q('#meas').classList.remove('pl')};
 let AC;const beep=()=>{try{const o=AC.createOscillator();o.connect(AC.destination);o.frequency.value=880;o.start();o.stop(AC.currentTime+.15)}catch(e){}};
 const doCap=()=>{beep();F.arm=0;F.t0=0;const s=F.steps[F.i];
- if(s.k=='toe')F.d[s.id]=w180(hY()-F.base);else if(s.k=='camber')F.d[s.id]=cam();
+ if(s.k=='toe'){F.d[s.id]=w180(hY()-F.base);F.t[s.id]=performance.now()/1e3}else if(s.k=='camber')F.d[s.id]=cam();
  else if(s.k=='zero'){F.h0=hZ();F.sg=s.w=='L'?-1:1;F.d.z=1}else F.d[s.id]={a:F.sg*w360(hZ()-F.h0),c:cam()};F.cv[wk(s.w)]=s.k=='camber'?fmt(F.d[s.id]):'';
- if(++F.i<F.steps.length)step();else{F.stage=0;const m=F.f.m(F.d,F.steps[0].w);Object.assign(RS.d[RS.st],m);saveR();q('#rt').textContent=F.f.t+' ('+RS.st+')';q('#rb').innerHTML=ITEMS.filter(i=>m[i[0]]!=null).map(i=>row(i[1],fmt(m[i[0]]),i[4],i[2],m[i[0]],i[3])).join('');q('#rn').textContent=Object.keys(specs()).length?'':'No specs for this vehicle yet. Add them under Vehicle & specs.';show('res')}};
+ if(++F.i<F.steps.length)step();else{F.stage=0;const m=F.f.m(F.d,F.steps[0].w,F.t);Object.assign(RS.d[RS.st],m);saveR();q('#rt').textContent=F.f.t+' ('+RS.st+')';q('#rb').innerHTML=ITEMS.filter(i=>m[i[0]]!=null).map(i=>row(i[1],fmt(m[i[0]]),i[4],i[2],m[i[0]],i[3])).join('');q('#rn').textContent=Object.keys(specs()).length?'':'No specs for this vehicle yet. Add them under Vehicle & specs.';show('res')}};
 q('#cap').onclick=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}F.arm=!F.arm;F.t0=0};
 q('#back').onclick=()=>{F=null;show('dash')};q('#done').onclick=q('#back').onclick;
 q('#redo').onclick=()=>{const s=F.steps[0];start(F.k,s.w)};
-for(const[id,k,w]of[['toe','toe'],['camber','camber'],['camberR','camberR'],['four','four'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
+for(const[id,k,w]of[['toe','toe'],['camber','camber'],['camberR','camberR'],['four','four'],['body','body'],['casL','cas','L'],['casR','cas','R']])q('#t-'+id).onclick=()=>start(k,w);
 const upU=()=>{q('#uLbl').textContent=S.dm?'deg/min':'decimal';q('#vLbl').textContent=RS.v.mk?[RS.v.y,RS.v.mk,RS.v.md].filter(Boolean).join(' '):'Choose a vehicle';q('#stg').textContent='Stage: '+RS.st};
 q('#t-units').onclick=()=>{S.dm=S.dm?0:1;save();upU()};
 
@@ -269,9 +277,9 @@ q('#vCopy').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify({...FS
 q('#vOk').onclick=()=>{upU();show('dash')};
 q('#t-veh').onclick=()=>vOpen();q('#stg').onclick=()=>{RS.st=RS.st=='before'?'after':'before';saveR();upU()};
 /* live comparison against spec while measuring */
-function lsp(s,yaw){const d=F.d;if(F.k=='camber'||F.k=='camberR')return{v:cam(),k:F.k=='camber'?'camF':'camR',h:1};
+function lsp(s,yaw){const d=F.d;if(s.cl)return{v:yaw-d[s.id.slice(0,-1)],k:'_',h:1};if(F.k=='camber'||F.k=='camberR')return{v:cam(),k:F.k=='camber'?'camF':'camR',h:1};
  if(F.k=='toe'&&s.w=='R')return{v:w180(d.L-yaw),k:'toeF',h:1};
- if(F.k=='four'){const T=(d.RL+d.RR)/2;if(s.w=='RR')return{v:d.RL-yaw,k:'toeR',h:1};if(s.w=='FL')return{v:yaw-T,k:'toeF',h:.5};if(s.w=='FR')return{v:-(yaw-T),k:'toeF',h:.5}}return null}
+ if(F.k=='four'||F.k=='body'){const T=(d.RL+d.RR)/2;if(s.w=='RR')return{v:d.RL-yaw,k:'toeR',h:1};if(s.w=='FL')return{v:yaw-T,k:'toeF',h:.5};if(s.w=='FR')return{v:-(yaw-T),k:'toeF',h:.5}}return null}
 /* report */
 const RF=['shop','cust','tech','plate','odo','note'];
 q('#t-rep').onclick=q('#toRep').onclick=()=>{RF.forEach(f=>q('#r_'+f).value=RS.c[f]||'');show('repS')};
@@ -295,7 +303,7 @@ function tick(){requestAnimationFrame(tick);try{if(F&&V&&F.stage&&F.steps[F.i]){
   else{lv=Math.abs(Math.asin(uy)/D);b=scr(0,uy);v=cam();sub='Level error '+lv.toFixed(1)+'°'}
   let ok=lv<tol;
   if(s.k=='sweep'){v=F.sg*w360(hZ()-F.h0);ok=ok&&Math.abs(v-s.tgt)<1;sub='Target '+fmt(s.tgt)+'. Camber now '+fmt(cam())}
-  const sp=s.k=='toe'||s.k=='camber'?lsp(s,v):null,e=sp&&ev(sp.k,sp.v,sp.h),sE=q('#spec');q('#val').textContent=fmt(sp?sp.v:v);q('#sub').textContent=sub;sE.textContent=e?'Spec '+fmt(e.t)+' ± '+fmt(e.tol)+'. Off by '+fmt(e.d):'';sE.className=e?e.ok?'ok2':'no2':'';q('#lvl').classList.toggle('ok',lv<tol);const n=performance.now();if(F.arm){if(!ok)F.t0=0;else{if(!F.t0)F.t0=n;if(n-F.t0>=900){doCap();return}}}const cb=q('#cap');cb.disabled=false;cb.textContent=F.arm?(ok?'Hold still… '+Math.max(0,(900-(n-F.t0))/1000).toFixed(1):'Waiting for level, tap to cancel'):'Arm capture';
+  if(s.cl)sub='Change since first reading. Level '+lv.toFixed(2)+'°';const sp=s.k=='toe'||s.k=='camber'?lsp(s,v):null,e=sp&&ev(sp.k,sp.v,sp.h),sE=q('#spec');q('#val').textContent=fmt(sp?sp.v:v);q('#sub').textContent=sub;sE.textContent=e?'Spec '+fmt(e.t)+' ± '+fmt(e.tol)+'. Off by '+fmt(e.d):'';sE.className=e?e.ok?'ok2':'no2':'';q('#lvl').classList.toggle('ok',lv<tol);const n=performance.now();if(F.arm){if(!ok)F.t0=0;else{if(!F.t0)F.t0=n;if(n-F.t0>=900){doCap();return}}}const cb=q('#cap');cb.disabled=false;cb.textContent=F.arm?(ok?'Hold still… '+Math.max(0,(900-(n-F.t0))/1000).toFixed(1):'Waiting for level, tap to cancel'):'Arm capture';
   const c=x=>Math.max(-40,Math.min(40,x*57.3*12))+'px';q('#bub').style.setProperty('--x',c(b[0]));q('#bub').style.setProperty('--y',c(-b[1]))}}catch(e){}}
 tick();
 </script></body></html>
